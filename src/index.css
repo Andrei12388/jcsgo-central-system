@@ -16,6 +16,22 @@
   --sans: system-ui, sans-serif;
 }
 
+/* ===== LIGHT THEME ===== */
+body.light {
+  --text: #1f2937;
+  --text-h: #111827;
+  --bg: #f9fafb;
+  --card: #ffffff;
+  --border: #e5e7eb;
+  --code-bg: #f3f4f6;
+
+  --accent: #7c3aed;
+  --accent-bg: rgba(124, 58, 237, 0.1);
+  --accent-border: rgba(124, 58, 237, 0.4);
+
+  --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px;
+}
+
 body {
   margin: 0;
   background: var(--bg);

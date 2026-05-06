@@ -7,8 +7,16 @@ function App() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  
+  const [pdfFontSize, setPdfFontSize] = useState(8);
+const [pdfCellPadding, setPdfCellPadding] = useState(1);
+
   const [sortKey, setSortKey] = useState(null);
   const [sortDirection, setSortDirection] = useState("asc");
+
+  const [theme, setTheme] = useState(() => {
+  return localStorage.getItem("theme") || "light";
+});
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 30;
@@ -63,6 +71,11 @@ function App() {
   useEffect(() => {
     fetchData();
   }, []);
+
+ useEffect(() => {
+  document.body.className = theme;
+  localStorage.setItem("theme", theme);
+}, [theme]);
 
   // =========================
   // HEADERS
@@ -192,22 +205,33 @@ function App() {
   // =========================
   // PDF
   // =========================
-  const generatePdf = () => {
-    const doc = new jsPDF("l", "mm", "a4");
+const generatePdfPreview = () => {
+  const doc = new jsPDF("l", "mm", "a4");
 
-    const tableRows = sortedData.map((row) =>
-      headers.map((key) => String(row[key] || ""))
-    );
+  const tableColumn = headers;
 
-    autoTable(doc, {
-      head: [headers],
-      body: tableRows,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [7, 17, 65] },
-    });
+  const tableRows = sortedData.map((row) =>
+    headers.map((key) => String(row[key] || ""))
+  );
 
-    doc.save("master_list.pdf");
-  };
+  autoTable(doc, {
+    head: [tableColumn],
+    body: tableRows,
+    styles: {
+  fontSize: pdfFontSize,
+  cellPadding: pdfCellPadding,
+},
+    headStyles: {
+      fillColor: [7, 17, 65],
+      textColor: 255,
+    },
+  });
+
+  const pdfBlob = doc.output("blob");
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+
+  window.open(pdfUrl); // 👈 PREVIEW
+};
 
   // =========================
   // UI
@@ -216,10 +240,15 @@ function App() {
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>Master List</h1>
+      <h1>JCSGO 3PM Master List</h1>
+      <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+  Switch to {theme === "dark" ? "Light" : "Dark"} Mode
+</button>
+
 
       {/* ================= FORM ================= */}
       <div style={{ marginBottom: 20, padding: 10, border: "1px solid #ccc" }}>
+      
         <h3>{isEditing ? "Edit Member" : "Add Member"}</h3>
 
         {headers.map(
@@ -244,8 +273,18 @@ function App() {
           </>
         )}
       </div>
-
-      <button onClick={generatePdf}>Export PDF</button>
+  <div>
+    <label>Font Size: {pdfFontSize}</label>
+    <input
+      type="range"
+      min="1"
+      max="10"
+      value={pdfFontSize}
+      onChange={(e) => setPdfFontSize(Number(e.target.value))}
+      style={{ marginLeft: "10px" }}
+    />
+  </div>
+      <button onClick={generatePdfPreview}>Export PDF</button>
 
       {/* ================= TABLE ================= */}
       <table border="1" cellPadding="8" width="100%" ref={tableRef}>
@@ -301,6 +340,17 @@ function App() {
         >
           Next
         </button>
+
+          <select
+          value={currentPage}
+          onChange={(e) => setCurrentPage(Number(e.target.value))}
+        >
+          {Array.from({ length: totalPages }, (_, i) => (
+            <option key={i + 1} value={i + 1}>
+              Page {i + 1}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );
