@@ -402,32 +402,32 @@ export default function Calendar() {
       </h3>
 
       <p>
+        
         <b>Date:</b> {formatDate(viewEvent.startStr)}
       </p>
+
+        
 
       <p>
         <b>Location:</b>{" "}
         {viewEvent.extendedProps.location}
       </p>
 
-      <p>
-        <b>Description:</b>{" "}
-        {viewEvent.extendedProps.description}
-      </p>
+    
 
       <div style={{ marginTop: 10 }}>
-        <button onClick={() => setViewEvent(null)}>
-          Close
-        </button>
-
+        
         <button
-          style={{ marginLeft: 10 }}
+          style={{ marginLeft: 0 }}
           onClick={() => {
             setIsEditingEvent(true);
             setViewEvent(null);
           }}
         >
           Edit Event
+        </button>
+         <button onClick={() => setViewEvent(null)}>
+          Close
         </button>
       </div>
     </div>
@@ -453,6 +453,9 @@ export default function Calendar() {
           <div
             style={{
               background: "var(--card)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
               padding: 20,
               borderRadius: 10,
               width: 300,
@@ -460,7 +463,7 @@ export default function Calendar() {
             }}
           >
             <h3>Add Event</h3>
-
+            <label>Date:</label>
             <input
               type="date"
               value={newEvent.DATE}
@@ -468,15 +471,16 @@ export default function Calendar() {
                 setNewEvent({ ...newEvent, DATE: e.target.value })
               }
             />
-
+            <label>Event Name:</label>
             <input
-              placeholder="Description"
+              placeholder="Event Name"
               value={newEvent.DESCRIPTION}
               onChange={(e) =>
                 setNewEvent({ ...newEvent, DESCRIPTION: e.target.value })
               }
             />
 
+            <label>Location:</label>
             <input
               placeholder="Location"
               value={newEvent.LOCATION}
@@ -484,7 +488,7 @@ export default function Calendar() {
                 setNewEvent({ ...newEvent, LOCATION: e.target.value })
               }
             />
-
+                <label>Color:</label>
             <input
               type="color"
               value={newEvent.COLOR}
@@ -509,6 +513,7 @@ export default function Calendar() {
           style={{
             position: "fixed",
             top: 0,
+           
             left: 0,
             zIndex: 1000,
             width: "100%",
@@ -522,6 +527,9 @@ export default function Calendar() {
           <div
             style={{
               background: "var(--card)",
+               display: "flex",
+            flexDirection: "column",
+            gap: 10,
               padding: 20,
               borderRadius: 10,
               width: 300,
@@ -529,7 +537,7 @@ export default function Calendar() {
             }}
           >
             <h3>Edit Event</h3>
-
+                <label>Date:</label>
             <input
               type="date"
               value={selectedEventData.DATE}
@@ -540,7 +548,7 @@ export default function Calendar() {
                 })
               }
             />
-
+            <label>Event Name:</label>
             <input
               value={selectedEventData.DESCRIPTION}
               onChange={(e) =>
@@ -550,7 +558,7 @@ export default function Calendar() {
                 })
               }
             />
-
+            <label>Location:</label>
             <input
               value={selectedEventData.LOCATION}
               onChange={(e) =>
@@ -560,7 +568,7 @@ export default function Calendar() {
                 })
               }
             />
-
+            <label>Color:</label>
             <input
               type="color"
               value={selectedEventData.COLOR || "#4da6ff"}
