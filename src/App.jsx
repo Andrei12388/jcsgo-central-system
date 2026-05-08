@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import "./App.css";
+import Calendar from "./components/calendar";
 
 function App() {
   const [data, setData] = useState([]);
@@ -10,6 +11,8 @@ const [showForm, setShowForm] = useState(false);
   
   const [pdfFontSize, setPdfFontSize] = useState(8);
 const [pdfCellPadding, setPdfCellPadding] = useState(1);
+
+const [showCalendar, setShowCalendar] = useState(false);
 
   const [sortKey, setSortKey] = useState(null);
   const [sortDirection, setSortDirection] = useState("asc");
@@ -26,7 +29,7 @@ const [pdfCellPadding, setPdfCellPadding] = useState(1);
   const [editId, setEditId] = useState(null);
 
   const WEB_APP_URL =
-    "https://script.google.com/macros/s/AKfycbxZUERo9RMv_1U7s0stb3F7poV4EQ2y9gho24ROSSoQc_K2bCSM_R2XXit0llCM715W/exec";
+    "https://script.google.com/macros/s/AKfycbyYUeoQyNn4fDLNLN-Vmblp63drW7H1tMj-0wqwTpgpCUYY4epi31Wo4j1Pr97xKAlI/exec";
 
   const tableRef = useRef(null);
 
@@ -98,6 +101,56 @@ const [pdfCellPadding, setPdfCellPadding] = useState(1);
     data.length > 0
       ? Object.keys(data[0]).filter((k) => k !== "_rowIndex")
       : [];
+
+      // =========================
+// BIRTHDAY THIS WEEK
+// =========================
+const birthdayKey = headers.find(
+  (h) =>
+    h.toLowerCase().includes("b. date") ||
+    h.toLowerCase().includes("birth")
+);
+const getUpcomingBirthdays = () => {
+  if (!birthdayKey) return [];
+
+  const today = new Date();
+
+  // Monday of current week
+  const monday = new Date(today);
+  const day = monday.getDay();
+
+  // Adjust so Monday = start
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  monday.setDate(monday.getDate() + diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+
+  // Sunday (end of week)
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
+  return data.filter((row) => {
+    const birthValue = row[birthdayKey];
+    if (!birthValue) return false;
+
+    const birthDate = new Date(birthValue);
+    if (isNaN(birthDate)) return false;
+
+    // Use current year
+    const currentYearBirthday = new Date(
+      today.getFullYear(),
+      birthDate.getMonth(),
+      birthDate.getDate()
+    );
+
+    return (
+      currentYearBirthday >= monday &&
+      currentYearBirthday <= sunday
+    );
+  });
+};
+
+const upcomingBirthdays = getUpcomingBirthdays();
 
   // =========================
   // FORM HANDLERS
@@ -269,9 +322,6 @@ const tableRows = sortedData.map((row) =>
   window.open(pdfUrl); // 👈 PREVIEW
 };
 
-  // =========================
-  // UI
-  // =========================
   if (loading) return <h2>Loading...</h2>;
 
   return (
@@ -280,23 +330,21 @@ const tableRows = sortedData.map((row) =>
       <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
   Switch to {theme === "dark" ? "Light" : "Dark"} Mode
 </button>
+
 <button
-  onClick={() => {
-    resetForm();
-    setShowForm(true);
-  }}
+  onClick={() => setShowCalendar((prev) => !prev)}
   style={{
     marginTop: 10,
-    marginBottom: 20,
+    marginBottom: 10,
     padding: "10px 20px",
     cursor: "pointer",
   }}
 >
-  Add Member
+  {showCalendar ? "Hide Calendar" : "Show Calendar"}
 </button>
 
+{showCalendar && <Calendar/>}
 
-    {/* ================= POPUP FORM ================= */}
 {showForm && (
   <div
     style={{
@@ -367,8 +415,51 @@ const tableRows = sortedData.map((row) =>
     />
   </div>
       <button onClick={generatePdfPreview}>Export PDF</button>
+      
+{/* ================= BIRTHDAY NOTIFICATION ================= */}
+{upcomingBirthdays.length > 0 && (
+  
+  <div
+    style={{
+      background: "#ffe082",
+      padding: "15px",
+      borderRadius: "10px",
+      marginBottom: "20px",
+      marginTop: "20px",
+      color: "#000",
+      fontWeight: "bold",
+    }}
+  >
+   
+    🎂 Birthday This Week (Monday - Sunday) 
 
-      {/* ================= TABLE ================= */}
+    <ul style={{ marginTop: 10 }}>
+      {upcomingBirthdays.map((person, index) => (
+        <li key={index}>
+         {person["First Name"]} {person["Last Name"]} —
+          {" "}
+          {formatDate(person[birthdayKey])}
+        </li>
+      ))}
+    </ul>
+  </div>
+)}
+
+<button
+  onClick={() => {
+    resetForm();
+    setShowForm(true);
+  }}
+  style={{
+    marginTop: 10,
+    marginBottom: 20,
+    padding: "10px 20px",
+    cursor: "pointer",
+  }}
+>
+  Add Member
+</button>
+   
       <table border="1" cellPadding="8" width="100%" ref={tableRef}>
         <thead>
           <tr>

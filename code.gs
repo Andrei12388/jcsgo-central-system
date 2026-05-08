@@ -139,12 +139,98 @@ function searchMember(query) {
   };
 }
 
-function doGet() {
+function getEvents() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName("EVENTS");
+  const values = sheet.getDataRange().getValues();
+
+  const headers = values[0];
+
+  const data = values.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => obj[h] = row[i]);
+    return obj;
+  });
+
+  return data;
+}
+
+function addEvent(data) {
+  const sheet = SpreadsheetApp.getActive().getSheetByName("EVENTS");
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+  const idValues = sheet.getRange(2, 1, Math.max(sheet.getLastRow() - 1, 1), 1)
+    .getValues()
+    .flat();
+
+  const numericIds = idValues.map(Number).filter(n => !isNaN(n));
+  const newId = numericIds.length ? Math.max(...numericIds) + 1 : 1;
+
+  const row = headers.map(h => {
+    if (h === "id") return newId;
+    return data[h] || "";
+  });
+
+  sheet.appendRow(row);
+
+  return {
+    status: "success",
+    id: newId
+  };
+}
+
+function editEvent(id, data) {
+  const sheet = SpreadsheetApp.getActive().getSheetByName("EVENTS");
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === String(id)) {
+
+      headers.forEach((h, j) => {
+        if (h === "id") return;
+        if (data[h] !== undefined) {
+          sheet.getRange(i + 1, j + 1).setValue(data[h]);
+        }
+      });
+
+      return { status: "success", message: "Event updated" };
+    }
+  }
+
+  return { status: "error", message: "Not found" };
+}
+
+function deleteEvent(id) {
+  const sheet = SpreadsheetApp.getActive().getSheetByName("EVENTS");
+  const values = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === String(id)) {
+      sheet.deleteRow(i + 1);
+      return { status: "success" };
+    }
+  }
+
+  return { status: "error", message: "Not found" };
+}
+
+function doGet(e) {
   try {
+    const type = e.parameter.type;
+
+    if (type === "events") {
+      return jsonResponse({
+        status: "success",
+        data: getEvents()
+      });
+    }
+
     return jsonResponse({
       status: "success",
       data: getAllData()
     });
+
   } catch (err) {
     return jsonResponse({
       status: "error",
@@ -170,6 +256,15 @@ function doPost(e) {
 
       case "search":
         return jsonResponse(searchMember(body.query));
+
+      case "addEvent":
+        return jsonResponse(addEvent(body.data));
+
+      case "editEvent":
+       return jsonResponse(editEvent(body.id, body.data));
+
+      case "deleteEvent":
+       return jsonResponse(deleteEvent(body.id));
 
       default:
         return jsonResponse({

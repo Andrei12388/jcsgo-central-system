@@ -7,13 +7,81 @@
   --border: #2e303a;
   --code-bg: #1f2028;
 
-  --accent: #c084fc;
-  --accent-bg: rgba(192, 132, 252, 0.15);
+  --accent: #2828f6;
+  --accent-bg: rgba(15, 151, 26, 0.702);
   --accent-border: rgba(192, 132, 252, 0.5);
 
   --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px;
 
   --sans: system-ui, sans-serif;
+}
+
+/* =========================
+   FULLCALENDAR THEME SUPPORT
+========================= */
+
+.calendar-container {
+  background: var(--bg);
+  color: var(--text);
+  padding: 20px;
+  border-radius: 10px;
+}
+
+/* Calendar base */
+.fc {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+/* Header (month / arrows) */
+.fc-toolbar-title {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.fc-button {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+
+.fc-button:hover {
+  background: var(--accent-bg) !important;
+  border-color: var(--accent-border) !important;
+}
+
+/* Day grid cells */
+.fc-daygrid-day {
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+
+.fc-daygrid-day-number {
+  color: var(--text);
+}
+
+/* Event dot / event block */
+.fc-event {
+  background: var(--accent) !important;
+  border: none !important;
+  color: white !important;
+  padding: 2px 4px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+/* Hover effect */
+.fc-event:hover {
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+/* Today highlight */
+.fc-day-today {
+  background: var(--accent-bg) !important;
 }
 
 /* ===== LIGHT THEME ===== */
@@ -25,8 +93,8 @@ body.light {
   --border: #e5e7eb;
   --code-bg: #f3f4f6;
 
-  --accent: #7c3aed;
-  --accent-bg: rgba(124, 58, 237, 0.1);
+  --accent: #4d61f8;
+  --accent-bg: rgba(12, 225, 30, 0.702);
   --accent-border: rgba(124, 58, 237, 0.4);
 
   --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px;
