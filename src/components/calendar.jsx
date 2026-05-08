@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import { useRef } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const WEB_APP_URL =
   "https://script.google.com/macros/s/AKfycbyYUeoQyNn4fDLNLN-Vmblp63drW7H1tMj-0wqwTpgpCUYY4epi31Wo4j1Pr97xKAlI/exec";
@@ -9,6 +14,9 @@ const WEB_APP_URL =
 export default function Calendar() {
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const calendarRef = useRef(null);
+
+  const [processing, setProcessing] = useState(false);
 
   const [showAdd, setShowAdd] = useState(false);
   const [isEditingEvent, setIsEditingEvent] = useState(false);
@@ -63,7 +71,10 @@ export default function Calendar() {
   }, []);
 
   // ================= ADD EVENT =================
-  const saveEvent = async () => {
+ const saveEvent = async () => {
+  setProcessing(true);
+
+  try {
     const res = await fetch(WEB_APP_URL, {
       method: "POST",
       body: JSON.stringify({
@@ -75,7 +86,7 @@ export default function Calendar() {
     const result = await res.json();
 
     if (result.status === "success") {
-      alert("Event added!");
+      toast.success("Event added!");
 
       setNewEvent({
         DATE: "",
@@ -87,12 +98,176 @@ export default function Calendar() {
       setShowAdd(false);
       fetchEvents();
     } else {
-      alert(result.message);
+      toast.error(result.message);
     }
-  };
+  } catch (err) {
+    toast.error("Something went wrong");
+  } finally {
+    setProcessing(false);
+  }
+};
+
+ const exportMonthPDF = () => {
+  const calendarApi = calendarRef.current.getApi();
+  const view = calendarApi.view;
+
+  const start = new Date(view.currentStart);
+  const end = new Date(view.currentEnd);
+
+  const monthEvents = events.filter((ev) => {
+    const d = new Date(ev.date);
+    return d >= start && d < end;
+  });
+
+  const doc = new jsPDF("p", "mm", "a4");
+
+  // =========================
+  // PAGE 1: EVENT LIST
+  // =========================
+  doc.setFontSize(14);
+  doc.text(`Events - ${view.title}`, 10, 10);
+
+  const tableData = monthEvents.map((ev) => [
+    ev.date,
+    ev.title,
+    ev.extendedProps?.location || "",
+  ]);
+
+  autoTable(doc, {
+    head: [["Date", "Event", "Location"]],
+    body: tableData,
+    startY: 20,
+  });
+
+  // =========================
+  // PAGE 2: MONTH CALENDAR
+  // =========================
+  doc.addPage();
+
+  doc.setFontSize(14);
+  doc.text(`Calendar View - ${view.title}`, 10, 10);
+
+  const year = start.getFullYear();
+  const month = start.getMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+
+  const startDay = firstDay.getDay();
+  const daysInMonth = lastDay.getDate();
+
+  const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  // Build grid
+  let day = 1;
+  let row = [];
+  const grid = [];
+
+  for (let i = 0; i < startDay; i++) row.push("");
+
+  while (day <= daysInMonth) {
+    row.push(day);
+    if (row.length === 7) {
+      grid.push(row);
+      row = [];
+    }
+    day++;
+  }
+
+  while (row.length > 0 && row.length < 7) row.push("");
+  if (row.length) grid.push(row);
+
+  autoTable(doc, {
+    head: [weekDays],
+    body: grid,
+    startY: 20,
+    styles: {
+      fontSize: 9,
+      cellHeight: 18,
+      valign: "top",
+    },
+
+    didParseCell: function (data) {
+      if (data.section !== "body") return;
+
+      const cellDay = data.cell.raw;
+
+      if (!cellDay) return;
+
+      const cellDate = new Date(year, month, cellDay);
+
+      const dayEvents = monthEvents.filter((ev) => {
+        const evDate = new Date(ev.date);
+        return (
+          evDate.getFullYear() === cellDate.getFullYear() &&
+          evDate.getMonth() === cellDate.getMonth() &&
+          evDate.getDate() === cellDate.getDate()
+        );
+      });
+
+      // =========================
+      // COLOR CODING RULES
+      // =========================
+      if (dayEvents.length === 1) {
+        data.cell.styles.fillColor = [220, 255, 220]; // light green
+      } else if (dayEvents.length > 1) {
+        data.cell.styles.fillColor = [255, 220, 220]; // light red (busy day)
+      }
+
+      // =========================
+      // CELL CONTENT
+      // =========================
+      if (dayEvents.length > 0) {
+        const titles = dayEvents
+          .slice(0, 2)
+          .map((e) => "• " + e.title)
+          .join("\n");
+
+        data.cell.text = [`${cellDay}\n${titles}`];
+      } else {
+        data.cell.text = cellDay ? [String(cellDay)] : [""];
+      }
+    },
+
+    didDrawCell: function (data) {
+      if (data.section !== "body") return;
+
+      const cellDay = data.cell.raw;
+      if (!cellDay) return;
+
+      const cellDate = new Date(year, month, cellDay);
+
+      const dayEvents = monthEvents.filter((ev) => {
+        const evDate = new Date(ev.date);
+        return (
+          evDate.getFullYear() === cellDate.getFullYear() &&
+          evDate.getMonth() === cellDate.getMonth() &&
+          evDate.getDate() === cellDate.getDate()
+        );
+      });
+
+      // draw small indicator dots
+      if (dayEvents.length > 0) {
+        const x = data.cell.x + data.cell.width - 4;
+        const y = data.cell.y + 4;
+
+        doc.setFillColor(0, 123, 255);
+        doc.circle(x, y, 1.2, "F");
+      }
+    },
+  });
+
+  const pdfBlob = doc.output("blob");
+  const url = URL.createObjectURL(pdfBlob);
+
+  window.open(url);
+};
 
   // ================= UPDATE EVENT =================
-  const updateEvent = async () => {
+ const updateEvent = async () => {
+  setProcessing(true);
+
+  try {
     const res = await fetch(WEB_APP_URL, {
       method: "POST",
       body: JSON.stringify({
@@ -105,17 +280,27 @@ export default function Calendar() {
     const result = await res.json();
 
     if (result.status === "success") {
-      alert("Updated!");
+      toast.success("Event updated!");
       setIsEditingEvent(false);
       setSelectedEventData(null);
       fetchEvents();
+    } else {
+      toast.error(result.message);
     }
-  };
+  } catch (err) {
+    toast.error("Update failed");
+  } finally {
+    setProcessing(false);
+  }
+};
 
   // ================= DELETE EVENT =================
-  const deleteEvent = async () => {
-    if (!window.confirm("Delete this event?")) return;
+ const deleteEvent = async () => {
+  if (!window.confirm("Delete this event?")) return;
 
+  setProcessing(true);
+
+  try {
     const res = await fetch(WEB_APP_URL, {
       method: "POST",
       body: JSON.stringify({
@@ -127,18 +312,36 @@ export default function Calendar() {
     const result = await res.json();
 
     if (result.status === "success") {
+      toast.success("Event deleted!");
       setIsEditingEvent(false);
       setSelectedEventData(null);
       fetchEvents();
+    } else {
+      toast.error(result.message);
     }
-  };
+  } catch (err) {
+    toast.error("Delete failed");
+  } finally {
+    setProcessing(false);
+  }
+};
 
   // ================= UI =================
   return (
     <div className="calendar-container">
+        {processing && (
+  <div className="loading-overlay">
+    <div className="spinner" />
+    <p>Processing...</p>
+  </div>
+)}
+        <ToastContainer position="bottom-right" autoClose={2000} />
       <h2>Events Calendar</h2>
-
+<button onClick={exportMonthPDF}>
+  Export This Month PDF
+</button>
      <FullCalendar
+      ref={calendarRef}
   plugins={[dayGridPlugin, interactionPlugin]}
   initialView="dayGridMonth"
   events={events}

@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import "./App.css";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Calendar from "./components/calendar";
 
 function App() {
@@ -11,6 +13,7 @@ const [showForm, setShowForm] = useState(false);
   
   const [pdfFontSize, setPdfFontSize] = useState(8);
 const [pdfCellPadding, setPdfCellPadding] = useState(1);
+const [actionLoading, setActionLoading] = useState(false);
 
 const [showCalendar, setShowCalendar] = useState(false);
 
@@ -172,20 +175,24 @@ const resetForm = () => {
   // =========================
   // ADD
   // =========================
-  const handleAdd = async () => {
-    const res = await callAPI({
-      action: "add",
-      data: form,
-    });
+ const handleAdd = async () => {
+  setActionLoading(true);
 
-    if (res.status === "success") {
-      alert("Member added!");
-      resetForm();
-      fetchData();
-    } else {
-      alert(res.message);
-    }
-  };
+  const res = await callAPI({
+    action: "add",
+    data: form,
+  });
+
+  setActionLoading(false);
+
+  if (res.status === "success") {
+    toast.success("Member added successfully"); // ✅ FIX
+    resetForm();
+    fetchData();
+  } else {
+    toast.error(res.message);
+  }
+};
 
   // =========================
   // EDIT START
@@ -212,36 +219,44 @@ const startEdit = (row) => {
   // =========================
   // SAVE EDIT
   // =========================
-  const handleEdit = async () => {
-    const res = await callAPI({
-      action: "edit",
-      id: editId,
-      data: form,
-    });
+ const handleEdit = async () => {
+  setActionLoading(true);
 
-    if (res.status === "success") {
-      alert("Updated!");
-      resetForm();
-      fetchData();
-    } else {
-      alert(res.message);
-    }
-  };
+  const res = await callAPI({
+    action: "edit",
+    id: editId,
+    data: form,
+  });
+
+  setActionLoading(false);
+
+  if (res.status === "success") {
+    toast.success("Member updated successfully");
+    resetForm();
+    fetchData();
+  } else {
+    toast.error(res.message);
+  }
+};
 
   // =========================
   // DELETE
   // =========================
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this member?")) return;
+    setActionLoading(true);
 
     const res = await callAPI({
       action: "delete",
       id,
     });
 
-    if (res.status === "success") {
-      fetchData();
-    } else {
+    setActionLoading(false);
+
+   if (res.status === "success") {
+  toast.success("Deleted successfully");
+  fetchData();
+} else {
       alert(res.message);
     }
   };
@@ -321,11 +336,20 @@ const tableRows = sortedData.map((row) =>
 
   window.open(pdfUrl); // 👈 PREVIEW
 };
-
-  if (loading) return <h2>Loading...</h2>;
+  
+  
 
   return (
+    
     <div style={{ padding: 20 }}>
+      <ToastContainer position="bottom-right" autoClose={2000} />
+      {actionLoading && (
+  <div className="action-toast">
+     <div className="spinner" />
+    Processing...
+  </div>
+  
+)}
      <div style={{display: "flex", alignItems: "center", gap: 10, justifyItems: "center", justifyContent: "center"}}><img src="logonotitle.png" width={100} height={50}></img> <h1>JCSGO 3PM Master List</h1></div>
       <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
   Switch to {theme === "dark" ? "Light" : "Dark"} Mode
@@ -343,7 +367,9 @@ const tableRows = sortedData.map((row) =>
   {showCalendar ? "Hide Calendar" : "Show Calendar"}
 </button>
 
-{showCalendar && <Calendar/>}
+<div style={{ display: showCalendar ? "block" : "none" }}>
+  <Calendar />
+</div>
 
 {showForm && (
   <div
