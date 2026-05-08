@@ -276,7 +276,7 @@ const tableRows = sortedData.map((row) =>
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>JCSGO 3PM Master List</h1>
+     <div style={{display: "flex", alignItems: "center", gap: 10, justifyItems: "center", justifyContent: "center"}}><img src="logonotitle.png" width={100} height={50}></img> <h1>JCSGO 3PM Master List</h1></div>
       <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
   Switch to {theme === "dark" ? "Light" : "Dark"} Mode
 </button>
@@ -356,7 +356,7 @@ const tableRows = sortedData.map((row) =>
 )}
 
   <div>
-    <label>Font Size: {pdfFontSize}</label>
+    <label>PDF Font Size: {pdfFontSize}</label>
     <input
       type="range"
       min="1"
