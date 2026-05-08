@@ -6,7 +6,7 @@ import "./App.css";
 function App() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-
+const [showForm, setShowForm] = useState(false);
   
   const [pdfFontSize, setPdfFontSize] = useState(8);
 const [pdfCellPadding, setPdfCellPadding] = useState(1);
@@ -26,7 +26,7 @@ const [pdfCellPadding, setPdfCellPadding] = useState(1);
   const [editId, setEditId] = useState(null);
 
   const WEB_APP_URL =
-    "https://script.google.com/macros/s/AKfycbwtZWDXfI1l2dkNMQ-EgK5GJJHWXi0wsphQD7gusoyd5M9lTwaXniM3wY75SJXR0XvD/exec";
+    "https://script.google.com/macros/s/AKfycbxZUERo9RMv_1U7s0stb3F7poV4EQ2y9gho24ROSSoQc_K2bCSM_R2XXit0llCM715W/exec";
 
   const tableRef = useRef(null);
 
@@ -41,6 +41,20 @@ const [pdfCellPadding, setPdfCellPadding] = useState(1);
 
     return res.json();
   };
+
+  const formatDate = (value) => {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (isNaN(date)) return value;
+
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
 
   // =========================
   // FETCH DATA
@@ -95,11 +109,12 @@ const [pdfCellPadding, setPdfCellPadding] = useState(1);
     }));
   };
 
-  const resetForm = () => {
-    setForm({});
-    setIsEditing(false);
-    setEditId(null);
-  };
+const resetForm = () => {
+  setForm({});
+  setIsEditing(false);
+  setEditId(null);
+  setShowForm(false);
+};
 
   // =========================
   // ADD
@@ -122,11 +137,24 @@ const [pdfCellPadding, setPdfCellPadding] = useState(1);
   // =========================
   // EDIT START
   // =========================
-  const startEdit = (row) => {
-    setIsEditing(true);
-    setEditId(row.id);
-    setForm(row);
-  };
+const startEdit = (row) => {
+  const formattedRow = { ...row };
+
+  headers.forEach((key) => {
+    if (key.toLowerCase().includes("date") && row[key]) {
+      const date = new Date(row[key]);
+
+      if (!isNaN(date)) {
+        formattedRow[key] = date.toISOString().split("T")[0];
+      }
+    }
+  });
+
+  setIsEditing(true);
+  setEditId(row.id);
+  setForm(formattedRow);
+  setShowForm(true);
+};
 
   // =========================
   // SAVE EDIT
@@ -210,9 +238,17 @@ const generatePdfPreview = () => {
 
   const tableColumn = headers;
 
-  const tableRows = sortedData.map((row) =>
-    headers.map((key) => String(row[key] || ""))
-  );
+const tableRows = sortedData.map((row) =>
+  headers.map((key) => {
+    const value = row[key] || "";
+
+    if (key.toLowerCase().includes("date")) {
+      return formatDate(value);
+    }
+
+    return String(value);
+  })
+);
 
   autoTable(doc, {
     head: [tableColumn],
@@ -244,35 +280,81 @@ const generatePdfPreview = () => {
       <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
   Switch to {theme === "dark" ? "Light" : "Dark"} Mode
 </button>
+<button
+  onClick={() => {
+    resetForm();
+    setShowForm(true);
+  }}
+  style={{
+    marginTop: 10,
+    marginBottom: 20,
+    padding: "10px 20px",
+    cursor: "pointer",
+  }}
+>
+  Add Member
+</button>
 
 
-      {/* ================= FORM ================= */}
-      <div style={{ marginBottom: 20, padding: 10, border: "1px solid #ccc" }}>
-      
-        <h3>{isEditing ? "Edit Member" : "Add Member"}</h3>
+    {/* ================= POPUP FORM ================= */}
+{showForm && (
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 999,
+    }}
+  >
+    <div
+      style={{
+        background: theme === "dark" ? "#222" : "#fff",
+        color: theme === "dark" ? "#fff" : "#000",
+        padding: 20,
+        borderRadius: 10,
+        width: "400px",
+        maxHeight: "90vh",
+        overflowY: "auto",
+      }}
+    >
+      <h3>{isEditing ? "Edit Member" : "Add Member"}</h3>
 
-        {headers.map(
-          (key) =>
-            key !== "id" && (
-              <div key={key}>
-                <input
-                  placeholder={key}
-                  value={form[key] || ""}
-                  onChange={(e) => handleChange(key, e.target.value)}
-                />
-              </div>
-            )
-        )}
+      {headers.map(
+        (key) =>
+          key !== "id" && (
+            <div key={key} style={{ marginBottom: 10 }}>
+             <input
+  type={key.toLowerCase().includes("date") ? "date" : "text"}
+  placeholder={key}
+  value={form[key] || ""}
+  onChange={(e) => handleChange(key, e.target.value)}
+/>
+            </div>
+          )
+      )}
 
-        {!isEditing ? (
-          <button onClick={handleAdd}>Add</button>
-        ) : (
-          <>
-            <button onClick={handleEdit}>Save</button>
-            <button onClick={resetForm}>Cancel</button>
-          </>
-        )}
-      </div>
+      {!isEditing ? (
+        <button onClick={handleAdd}>Add</button>
+      ) : (
+        <button onClick={handleEdit}>Save</button>
+      )}
+
+      <button
+        onClick={resetForm}
+        style={{ marginLeft: 10 }}
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
+
   <div>
     <label>Font Size: {pdfFontSize}</label>
     <input
@@ -306,7 +388,11 @@ const generatePdfPreview = () => {
               <td>{startIndex + i + 1}</td>
 
               {headers.map((key) => (
-                <td key={key}>{row[key]}</td>
+              <td key={key}>
+  {key.toLowerCase().includes("date")
+    ? formatDate(row[key])
+    : row[key]}
+</td>
               ))}
 
               <td>

@@ -1,0 +1,10 @@
+input {
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+button {
+  padding: 8px 14px;
+  margin-top: 5px;
+  cursor: pointer;
+}
