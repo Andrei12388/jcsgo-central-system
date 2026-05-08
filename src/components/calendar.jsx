@@ -119,7 +119,7 @@ export default function Calendar() {
     return d >= start && d < end;
   });
 
-  const doc = new jsPDF("p", "mm", "a4");
+  const doc = new jsPDF("l", "mm", "a4");
 
   // =========================
   // PAGE 1: EVENT LIST
@@ -127,11 +127,15 @@ export default function Calendar() {
   doc.setFontSize(14);
   doc.text(`Events - ${view.title}`, 10, 10);
 
-  const tableData = monthEvents.map((ev) => [
-    ev.date,
-    ev.title,
-    ev.extendedProps?.location || "",
-  ]);
+ const sortedEvents = [...monthEvents].sort((a, b) => {
+  return new Date(a.date) - new Date(b.date);
+});
+
+const tableData = sortedEvents.map((ev) => [
+  formatDate(ev.date),
+  ev.title,
+  ev.extendedProps?.location || "",
+]);
 
   autoTable(doc, {
     head: [["Date", "Event", "Location"]],
@@ -218,10 +222,10 @@ export default function Calendar() {
       // CELL CONTENT
       // =========================
       if (dayEvents.length > 0) {
-        const titles = dayEvents
-          .slice(0, 2)
-          .map((e) => "• " + e.title)
-          .join("\n");
+      const titles = dayEvents
+  .map((e) => "• " + e.title)
+  .slice(0, 6) // optional safety limit
+  .join("\n");
 
         data.cell.text = [`${cellDay}\n${titles}`];
       } else {
