@@ -5,8 +5,10 @@ import "./App.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Calendar from "./components/calendar";
+import { useNotification } from "./components/notificationToast";
 
 function App() {
+  const { notify } = useNotification();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 const [showForm, setShowForm] = useState(false);
@@ -201,11 +203,11 @@ const resetForm = () => {
   setActionLoading(false);
 
   if (res.status === "success") {
-    toast.success("Member added successfully"); // ✅ FIX
+    notify.success("Member added successfully"); // ✅ FIX
     resetForm();
     fetchData();
   } else {
-    toast.error(res.message);
+    notify.error(res.message);
   }
 };
 
@@ -246,11 +248,11 @@ const startEdit = (row) => {
   setActionLoading(false);
 
   if (res.status === "success") {
-    toast.success("Member updated successfully");
+    notify.success("Member updated successfully");
     resetForm();
     fetchData();
   } else {
-    toast.error(res.message);
+    notify.error(res.message);
   }
 };
 
@@ -269,7 +271,7 @@ const startEdit = (row) => {
     setActionLoading(false);
 
    if (res.status === "success") {
-  toast.success("Deleted successfully");
+  notify.success("Deleted successfully");
   fetchData();
 } else {
       alert(res.message);
@@ -410,7 +412,7 @@ const getLabel = (key) => {
   return (
     
     <div style={{ padding: 20 }}>
-      <ToastContainer position="bottom-right" autoClose={2000} />
+  
       {actionLoading && (
   <div className="action-toast">
      <div className="spinner" />
@@ -447,7 +449,7 @@ const getLabel = (key) => {
       borderRadius: "12px",
       padding: "10px",
       boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
-      zIndex: 9999,
+      zIndex: 1000,
       overflowX: "hidden",
       overflowY: "auto",
     }}
@@ -680,7 +682,9 @@ const getLabel = (key) => {
           ))}
         </select>
       </div>
+       
     </div>
+    
   );
 }
 

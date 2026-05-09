@@ -7,6 +7,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useNotification } from "./notificationToast";
 
 
 
@@ -14,6 +15,7 @@ const WEB_APP_URL =
   "https://script.google.com/macros/s/AKfycbyYUeoQyNn4fDLNLN-Vmblp63drW7H1tMj-0wqwTpgpCUYY4epi31Wo4j1Pr97xKAlI/exec";
 
 export default function Calendar() {
+  const { notify } = useNotification();
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const calendarRef = useRef(null);
@@ -88,7 +90,7 @@ export default function Calendar() {
     const result = await res.json();
 
     if (result.status === "success") {
-      toast.success("Event added!");
+      notify.success("Event added!");
 
       setNewEvent({
         DATE: "",
@@ -100,10 +102,10 @@ export default function Calendar() {
       setShowAdd(false);
       fetchEvents();
     } else {
-      toast.error(result.message);
+      notify.error(result.message);
     }
   } catch (err) {
-    toast.error("Something went wrong");
+    notify.error("Something went wrong");
   } finally {
     setProcessing(false);
   }
@@ -291,15 +293,15 @@ const tableData = sortedEvents.map((ev) => [
     const result = await res.json();
 
     if (result.status === "success") {
-      toast.success("Event updated!");
+      notify.success("Event updated!");
       setIsEditingEvent(false);
       setSelectedEventData(null);
       fetchEvents();
     } else {
-      toast.error(result.message);
+      notify.error(result.message);
     }
   } catch (err) {
-    toast.error("Update failed");
+    notify.error("Update failed");
   } finally {
     setProcessing(false);
   }
@@ -323,15 +325,15 @@ const tableData = sortedEvents.map((ev) => [
     const result = await res.json();
 
     if (result.status === "success") {
-      toast.success("Event deleted!");
+      notify.success("Event deleted!");
       setIsEditingEvent(false);
       setSelectedEventData(null);
       fetchEvents();
     } else {
-      toast.error(result.message);
+      notify.error(result.message);
     }
   } catch (err) {
-    toast.error("Delete failed");
+    notify.error("Delete failed");
   } finally {
     setProcessing(false);
   }
@@ -346,7 +348,7 @@ const tableData = sortedEvents.map((ev) => [
     <p>Processing...</p>
   </div>
 )}
-        <ToastContainer position="bottom-right" autoClose={2000} />
+     
       <h2>Events Calendar</h2>
 <button onClick={exportMonthPDF}>
   Export This Month PDF
@@ -541,9 +543,9 @@ const tableData = sortedEvents.map((ev) => [
                display: "flex",
             flexDirection: "column",
             gap: 10,
-              padding: 20,
+              padding: 50,
               borderRadius: 10,
-              width: 300,
+              width: 400,
               color: "var(--text)",
             }}
           >
