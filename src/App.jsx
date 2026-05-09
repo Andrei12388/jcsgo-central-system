@@ -367,9 +367,40 @@ const tableRows = sortedData.map((row) =>
   {showCalendar ? "Hide Calendar" : "Show Calendar"}
 </button>
 
-<div style={{ display: showCalendar ? "block" : "none" }}>
-  <Calendar />
-</div>
+{showCalendar && (
+  <div
+    style={{
+      position: "fixed",
+      top: "15px",
+      left: "10px",
+      width: "97%",
+      height: "92vh",
+      background: theme === "dark" ? "#222" : "#fff",
+      borderRadius: "12px",
+      padding: "10px",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+      zIndex: 9999,
+      overflowX: "hidden",
+      overflowY: "auto",
+    }}
+  >
+    <button
+  onClick={() => setShowCalendar((prev) => !prev)}
+  style={{
+    position: "absolute",
+    top: 10,
+    right: 25,
+    marginTop: 10,
+    marginBottom: 10,
+    padding: "10px 20px",
+    cursor: "pointer",
+  }}
+>
+  {showCalendar ? "Close Calendar" : "Show Calendar"}
+</button>
+    <Calendar />
+  </div>
+)}
 
 {showForm && (
   <div
@@ -429,18 +460,7 @@ const tableRows = sortedData.map((row) =>
   </div>
 )}
 
-  <div>
-    <label>PDF Font Size: {pdfFontSize}</label>
-    <input
-      type="range"
-      min="1"
-      max="10"
-      value={pdfFontSize}
-      onChange={(e) => setPdfFontSize(Number(e.target.value))}
-      style={{ marginLeft: "10px" }}
-    />
-  </div>
-      <button onClick={generatePdfPreview}>Export PDF</button>
+  
       
 {/* ================= BIRTHDAY NOTIFICATION ================= */}
 {upcomingBirthdays.length > 0 && (
@@ -470,6 +490,20 @@ const tableRows = sortedData.map((row) =>
     </ul>
   </div>
 )}
+
+<div style={{ display: "flex", alignItems: "center"}}>
+    <label>PDF Font Size: {pdfFontSize}</label>
+    <input
+      type="range"
+      min="1"
+      max="10"
+      value={pdfFontSize}
+      onChange={(e) => setPdfFontSize(Number(e.target.value))}
+      style={{ marginLeft: "10px" }}
+    />
+     <button onClick={generatePdfPreview}>Export PDF</button>
+  </div>
+     
 
 <button
   onClick={() => {

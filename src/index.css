@@ -70,6 +70,8 @@
 .calendar-container {
   background: var(--bg);
   color: var(--text);
+
+  margin: auto;
   padding: 20px;
   border-radius: 10px;
 }

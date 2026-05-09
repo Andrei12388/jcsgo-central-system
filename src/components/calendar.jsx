@@ -8,6 +8,8 @@ import autoTable from "jspdf-autotable";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+
+
 const WEB_APP_URL =
   "https://script.google.com/macros/s/AKfycbyYUeoQyNn4fDLNLN-Vmblp63drW7H1tMj-0wqwTpgpCUYY4epi31Wo4j1Pr97xKAlI/exec";
 
@@ -187,7 +189,6 @@ const tableData = sortedEvents.map((ev) => [
     startY: 20,
   styles: {
   fontSize: 10,
-  fontweight: "bold",
   minCellHeight: 24,
   valign: "top",
   overflow: "linebreak",
