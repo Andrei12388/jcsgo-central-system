@@ -160,6 +160,7 @@ body {
 .app-container {
   max-width: 1200px;
   margin: auto;
+
   padding: 20px;
 }
 
@@ -174,6 +175,7 @@ h1 {
 
 /* CARD */
 .card {
+   
   background: var(--card);
   border: 1px solid var(--border);
   padding: 15px;

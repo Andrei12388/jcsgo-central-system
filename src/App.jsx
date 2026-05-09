@@ -464,18 +464,19 @@ const tableRows = sortedData.map((row) =>
       
 {/* ================= BIRTHDAY NOTIFICATION ================= */}
 {upcomingBirthdays.length > 0 && (
-  
-  <div
-    style={{
-      background: "#ffe082",
-      padding: "15px",
-      borderRadius: "10px",
-      marginBottom: "20px",
-      marginTop: "20px",
-      color: "#000",
-      fontWeight: "bold",
-    }}
-  >
+ <div
+  style={{
+    width: "100%",
+    boxSizing: "border-box",
+    background: "#ffe082",
+    padding: "15px",
+    borderRadius: "10px",
+    marginBottom: "20px",
+    marginTop: "20px",
+    color: "#000",
+    fontWeight: "bold",
+  }}
+>
    
     🎂 Birthday This Week (Monday - Sunday) 
 
