@@ -185,11 +185,14 @@ const tableData = sortedEvents.map((ev) => [
     head: [weekDays],
     body: grid,
     startY: 20,
-    styles: {
-      fontSize: 9,
-      cellHeight: 18,
-      valign: "top",
-    },
+  styles: {
+  fontSize: 10,
+  fontweight: "bold",
+  minCellHeight: 24,
+  valign: "top",
+  overflow: "linebreak",
+  cellPadding: 2,
+},
 
     didParseCell: function (data) {
       if (data.section !== "body") return;
@@ -222,12 +225,15 @@ const tableData = sortedEvents.map((ev) => [
       // CELL CONTENT
       // =========================
       if (dayEvents.length > 0) {
-      const titles = dayEvents
-  .map((e) => "• " + e.title)
-  .slice(0, 6) // optional safety limit
+     const titles = dayEvents
+  .map((e) => `• ${e.title}`)
+  .slice(0, 6)
   .join("\n");
 
-        data.cell.text = [`${cellDay}\n${titles}`];
+       data.cell.text = [
+  String(cellDay),
+  ...titles.split("\n"),
+];
       } else {
         data.cell.text = cellDay ? [String(cellDay)] : [""];
       }
