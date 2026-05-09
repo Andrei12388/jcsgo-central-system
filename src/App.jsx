@@ -31,6 +31,21 @@ const [showCalendar, setShowCalendar] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
 
+  const STATUS_OPTIONS = [
+  "1st Timer",
+  "2nd Timer",
+  "3rd Timer",
+  "3rd Timer",
+  "4th Timer",
+  "Regular",
+];
+
+const CELEBRATION_OPTIONS = ["8am Central", "10:30am Central", "3pm Central"];
+
+const CATEGORY_OPTIONS = ["Men", "Women", "Young Boys", "Young Girl"];
+
+const MARITAL_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
+
   const WEB_APP_URL =
     "https://script.google.com/macros/s/AKfycbyYUeoQyNn4fDLNLN-Vmblp63drW7H1tMj-0wqwTpgpCUYY4epi31Wo4j1Pr97xKAlI/exec";
 
@@ -336,8 +351,61 @@ const tableRows = sortedData.map((row) =>
 
   window.open(pdfUrl); // 👈 PREVIEW
 };
+
+const FIELD_LABELS = {
+  "first name": "First Name",
+  "last name": "Last Name",
+  "middle name": "Middle Name",
+
+  address: "Address",
+  "home address": "Home Address",
+  "present address": "Present Address",
+
+  age: "Age",
+  gender: "Gender",
+  birthdate: "Birth Date",
+  "b. date": "Birth Date",
+
+  status: "Status",
+  "marital status": "Marital Status",
+  category: "Category",
+  celebration: "Celebration Time",
+
+  contact: "Contact Number",
+  "phone number": "Phone Number",
+  email: "Email Address",
+};
+
+const normalizeKey = (key) =>
+  key
+    .toLowerCase()
+    .replace(/[_-]/g, " ")
+    .trim();
+
+const getLabel = (key) => {
+  return FIELD_LABELS[normalizeKey(key)] || key;
+};
   
-  
+ const getSelectOptions = (key) => {
+  const k = key.trim().toLowerCase();
+
+  switch (k) {
+    case "status":
+      return STATUS_OPTIONS;
+
+    case "celebration":
+      return CELEBRATION_OPTIONS;
+
+    case "category":
+      return CATEGORY_OPTIONS;
+
+    case "marital status":
+      return MARITAL_OPTIONS;
+
+    default:
+      return null;
+  }
+};
 
   return (
     
@@ -424,26 +492,46 @@ const tableRows = sortedData.map((row) =>
         padding: 20,
         borderRadius: 10,
         width: "400px",
+        justifyContent: "center",
+        alignItems: "center",
         maxHeight: "90vh",
         overflowY: "auto",
       }}
     >
-      <h3>{isEditing ? "Edit Member" : "Add Member"}</h3>
-
-      {headers.map(
-        (key) =>
-          key !== "id" && (
-            <div key={key} style={{ marginBottom: 10 }}>
-             <input
-  type={key.toLowerCase().includes("date") ? "date" : "text"}
-  placeholder={key}
-  value={form[key] || ""}
-  onChange={(e) => handleChange(key, e.target.value)}
-/>
-            </div>
-          )
-      )}
-
+      <h3 style={{textAlign: "center"}}>{isEditing ? "Edit Member" : "Add Member"}</h3>
+<div style={{display: "flex", flexDirection: "column", }}>
+     {headers.map(
+  (key) =>
+    key !== "id" && (
+      <div key={key} style={{ marginBottom: 10 }}>
+        <label style={{ display: "block", marginBottom: 5, fontWeight: 600 }}>
+  {getLabel(key)}
+</label>
+        {getSelectOptions(key) ? (
+          <select
+            value={form[key] || ""}
+            onChange={(e) => handleChange(key, e.target.value)}
+          >
+            <option value="">Select {key}</option>
+            {getSelectOptions(key).map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type={key.toLowerCase().includes("date") ? "date" : "text"}
+            placeholder={key}
+            value={form[key] || ""}
+            onChange={(e) => handleChange(key, e.target.value)}
+          />
+        )}
+      </div>
+    )
+)}
+      
+      <div>
       {!isEditing ? (
         <button onClick={handleAdd}>Add</button>
       ) : (
@@ -456,6 +544,8 @@ const tableRows = sortedData.map((row) =>
       >
         Cancel
       </button>
+      </div>
+      </div>
     </div>
   </div>
 )}
