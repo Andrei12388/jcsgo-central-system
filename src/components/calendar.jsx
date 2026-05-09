@@ -469,9 +469,9 @@ const tableData = sortedEvents.map((ev) => [
               display: "flex",
               flexDirection: "column",
               gap: 10,
-              padding: 20,
+              padding: 50,
               borderRadius: 10,
-              width: 300,
+              width: 400,
               color: "var(--text)",
             }}
           >

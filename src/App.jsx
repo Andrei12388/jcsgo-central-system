@@ -491,9 +491,10 @@ const getLabel = (key) => {
       style={{
         background: theme === "dark" ? "#222" : "#fff",
         color: theme === "dark" ? "#fff" : "#000",
-        padding: 20,
+        padding: 50,
         borderRadius: 10,
         width: "400px",
+        overflowX: "hidden",
         justifyContent: "center",
         alignItems: "center",
         maxHeight: "90vh",
