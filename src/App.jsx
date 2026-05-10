@@ -356,10 +356,14 @@ const startEdit = (row) => {
 const generatePdfPreview = () => {
   const doc = new jsPDF("l", "mm", "a4");
 
-  const tableColumn = headers;
+   const pdfHeaders = headers.filter(
+    (key) => key.toLowerCase() !== "image"
+  );
+
+  const tableColumn = pdfHeaders;
 
 const tableRows = sortedData.map((row) =>
-  headers.map((key) => {
+  pdfHeaders.map((key) => {
     const value = row[key] || "";
 
     if (key.toLowerCase().includes("date")) {
