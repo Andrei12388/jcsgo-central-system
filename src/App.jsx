@@ -6,7 +6,6 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Calendar from "./components/calendar";
 import { useNotification } from "./components/notificationToast";
-import ImageToBase64 from "./components/imagetobase64";
 
 function App() {
   const { notify } = useNotification();
@@ -461,7 +460,6 @@ const getLabel = (key) => {
   Switch to {theme === "dark" ? "Light" : "Dark"} Mode
 </button>
 
-<ImageToBase64/>
 
 <button
   onClick={() => setShowCalendar((prev) => !prev)}
