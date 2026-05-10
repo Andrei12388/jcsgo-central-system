@@ -39,12 +39,12 @@ const [showCalendar, setShowCalendar] = useState(false);
   "3rd Timer",
   "3rd Timer",
   "4th Timer",
-  "Regular",
+  "Regular/Active",
 ];
 
 const CELEBRATION_OPTIONS = ["8am Central", "10:30am Central", "3pm Central"];
 
-const CATEGORY_OPTIONS = ["Men", "Women", "Young Boys", "Young Girl"];
+const CATEGORY_OPTIONS = ["Men", "Women", "Young Boys", "Young Girls"];
 
 const MARITAL_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
 

@@ -32,6 +32,7 @@ export default function Calendar() {
   const [newEvent, setNewEvent] = useState({
     DATE: "",
     DESCRIPTION: "",
+    DETAILS: "",
     LOCATION: "",
     COLOR: "#4da6ff",
   });
@@ -62,6 +63,7 @@ export default function Calendar() {
           extendedProps: {
             location: ev.LOCATION,
             description: ev.DESCRIPTION,
+            details: ev.DETAILS,
             color: ev.COLOR,
           },
         }));
@@ -95,6 +97,7 @@ export default function Calendar() {
       setNewEvent({
         DATE: "",
         DESCRIPTION: "",
+        DETAILS: "",
         LOCATION: "",
         COLOR: "#4da6ff",
       });
@@ -138,11 +141,12 @@ export default function Calendar() {
 const tableData = sortedEvents.map((ev) => [
   formatDate(ev.date),
   ev.title,
+  ev.extendedProps?.details || "",
   ev.extendedProps?.location || "",
 ]);
 
   autoTable(doc, {
-    head: [["Date", "Event", "Location"]],
+    head: [["Date", "Event", "Details", "Location"]],
     body: tableData,
     startY: 20,
   });
@@ -368,6 +372,7 @@ const tableData = sortedEvents.map((ev) => [
       id: info.event.id,
       DATE: info.event.startStr,
       DESCRIPTION: info.event.title,
+      DETAILS: info.event.extendedProps.details,
       LOCATION: info.event.extendedProps.location,
       COLOR: info.event.backgroundColor,
     });
@@ -419,7 +424,36 @@ const tableData = sortedEvents.map((ev) => [
         <b>Date:</b> {formatDate(viewEvent.startStr)}
       </p>
 
-        
+<b
+    style={{
+      color: "var(--text-h)",
+      display: "block",
+      marginBottom: 6,
+    }}
+  >
+    Details
+  </b>
+     <div
+  style={{
+    marginTop: 12,
+    padding: 12,
+    background: "var(--bg)",
+    border: "1px solid var(--border)",
+    borderRadius: 8,
+  }}
+>
+
+  <div
+    style={{
+      whiteSpace: "pre-wrap",
+      lineHeight: 1.6,
+      color: "var(--text)",
+      fontSize: 14,
+    }}
+  >
+    {viewEvent.extendedProps.details || "No details provided"}
+  </div>
+</div>
 
       <p>
         <b>Location:</b>{" "}
@@ -492,6 +526,15 @@ const tableData = sortedEvents.map((ev) => [
                 setNewEvent({ ...newEvent, DESCRIPTION: e.target.value })
               }
             />
+
+            <label>Details:</label>
+<textarea
+  placeholder="Details"
+  value={newEvent.DETAILS}
+  onChange={(e) =>
+    setNewEvent({ ...newEvent, DETAILS: e.target.value })
+  }
+/>
 
             <label>Location:</label>
             <input
@@ -571,6 +614,18 @@ const tableData = sortedEvents.map((ev) => [
                 })
               }
             />
+
+            <label>Details:</label>
+<textarea
+  value={selectedEventData.DETAILS || ""}
+  onChange={(e) =>
+    setSelectedEventData({
+      ...selectedEventData,
+      DETAILS: e.target.value,
+    })
+  }
+/>
+
             <label>Location:</label>
             <input
               value={selectedEventData.LOCATION}
