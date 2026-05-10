@@ -6,6 +6,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Calendar from "./components/calendar";
 import { useNotification } from "./components/notificationToast";
+import ImageToBase64 from "./components/imagetobase64";
 
 function App() {
   const { notify } = useNotification();
@@ -181,6 +182,41 @@ const upcomingBirthdays = getUpcomingBirthdays();
       [key]: value,
     }));
   };
+
+  const convertImageToBase64 = (file) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      const img = new Image();
+
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // resize
+        const SIZE = 400;
+
+        canvas.width = SIZE;
+        canvas.height = SIZE;
+
+        ctx.drawImage(img, 0, 0, SIZE, SIZE);
+
+        // compress image
+        const compressed = canvas.toDataURL(
+          "image/jpeg",
+          0.3
+        );
+
+        resolve(compressed);
+      };
+
+      img.src = event.target.result;
+    };
+
+    reader.readAsDataURL(file);
+  });
+};
 
 const resetForm = () => {
   setForm({});
@@ -425,6 +461,8 @@ const getLabel = (key) => {
   Switch to {theme === "dark" ? "Light" : "Dark"} Mode
 </button>
 
+<ImageToBase64/>
+
 <button
   onClick={() => setShowCalendar((prev) => !prev)}
   style={{
@@ -523,12 +561,50 @@ const getLabel = (key) => {
             ))}
           </select>
         ) : (
-          <input
-            type={key.toLowerCase().includes("date") ? "date" : "text"}
-            placeholder={key}
-            value={form[key] || ""}
-            onChange={(e) => handleChange(key, e.target.value)}
-          />
+          key.toLowerCase() === "image" ? (
+  <div>
+    <input
+      type="file"
+      accept="image/*"
+      onChange={async (e) => {
+        const file = e.target.files[0];
+
+        if (!file) return;
+
+        const base64 = await convertImageToBase64(file);
+
+        handleChange(key, base64);
+      }}
+    />
+
+    {form[key] && (
+      <img
+        src={form[key]}
+        alt="preview"
+        style={{
+          width: 100,
+          height: 100,
+          objectFit: "cover",
+          marginTop: 10,
+          borderRadius: 8,
+        }}
+      />
+    )}
+  </div>
+) : (
+  <input
+    type={
+      key.toLowerCase().includes("date")
+        ? "date"
+        : "text"
+    }
+    placeholder={key}
+    value={form[key] || ""}
+    onChange={(e) =>
+      handleChange(key, e.target.value)
+    }
+  />
+)
         )}
       </div>
     )
@@ -634,9 +710,26 @@ const getLabel = (key) => {
 
               {headers.map((key) => (
               <td key={key}>
-  {key.toLowerCase().includes("date")
-    ? formatDate(row[key])
-    : row[key]}
+  {key.toLowerCase() === "image" ? (
+    row[key] ? (
+      <img
+        src={row[key]}
+        alt="member"
+        style={{
+          width: 60,
+          height: 60,
+          objectFit: "cover",
+          borderRadius: 8,
+        }}
+      />
+    ) : (
+      "No Image"
+    )
+  ) : key.toLowerCase().includes("date") ? (
+    formatDate(row[key])
+  ) : (
+    row[key]
+  )}
 </td>
               ))}
 
