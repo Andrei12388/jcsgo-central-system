@@ -55,6 +55,9 @@ const [loginError, setLoginError] = useState("");
 
 const [selectedCelebration, setSelectedCelebration] = useState("");
 const [selectedTitle, setSelectedTitle] = useState("");
+const [selectedMember, setSelectedMember] = useState(null);
+const [discipleSearch, setDiscipleSearch] = useState("");
+const [leaderSearch, setLeaderSearch] = useState("");
 const [hasLandingSelection, setHasLandingSelection] = useState(false);
 
 const LANDING_OPTIONS = [
@@ -293,6 +296,8 @@ const resetForm = () => {
   setForm({});
   setIsEditing(false);
   setEditId(null);
+  setDiscipleSearch("");
+  setLeaderSearch("");
   setShowForm(false);
 };
 
@@ -337,6 +342,8 @@ const startEdit = (row) => {
   setIsEditing(true);
   setEditId(row.id);
   setForm(formattedRow);
+  setDiscipleSearch("");
+  setLeaderSearch("");
   setShowForm(true);
 };
 
@@ -508,6 +515,14 @@ const tableRows = sortedData.map((row) =>
       return formatDate(value);
     }
 
+    if (isLeaderKey(key)) {
+      return value ? getMemberNameById(value) : "";
+    }
+
+    if (isDisciplesKey(key)) {
+      return String(parseMemberIds(value).length);
+    }
+
     return String(value);
   })
 );
@@ -565,8 +580,285 @@ const normalizeKey = (key) =>
 const getLabel = (key) => {
   return FIELD_LABELS[normalizeKey(key)] || key;
 };
-  
- const getSelectOptions = (key) => {
+
+const isLeaderKey = (key) => normalizeKey(key).includes("care group leader");
+const isDisciplesKey = (key) => normalizeKey(key).includes("disciple");
+const findMemberById = (id) => {
+  if (id === undefined || id === null) return null;
+  const normalizedId = String(id).trim();
+  return data.find(
+    (member) =>
+      String(member.id) === normalizedId ||
+      String(member._rowIndex) === normalizedId
+  );
+};
+
+const getFullName = (row) => {
+  if (!row) return "";
+  const firstNameKey = headers.find((key) => normalizeKey(key) === "first name");
+  const lastNameKey = headers.find((key) => normalizeKey(key) === "last name");
+  const fullNameKey = headers.find((key) => ["fullname", "full name"].includes(normalizeKey(key)));
+
+  const first = firstNameKey ? row[firstNameKey] : "";
+  const last = lastNameKey ? row[lastNameKey] : "";
+  const fullName = [first, last].filter(Boolean).join(" ").trim();
+
+  if (fullName) return fullName;
+  if (fullNameKey && row[fullNameKey]) return String(row[fullNameKey]).trim();
+  return row.id || "Member";
+};
+
+const getFirstName = (row) => {
+  if (!row) return "";
+  const firstNameKey = headers.find((key) => normalizeKey(key) === "first name");
+  if (firstNameKey && row[firstNameKey]) return row[firstNameKey];
+
+  const fullNameKey = headers.find((key) => ["fullname", "full name"].includes(normalizeKey(key)));
+  const fullName = fullNameKey ? String(row[fullNameKey] || "").trim() : "";
+  if (fullName) return fullName.split(" ")[0] || fullName;
+
+  return "";
+};
+
+const getMemberImage = (row) => {
+  const imageKey = headers.find((key) => normalizeKey(key) === "image");
+  return imageKey ? row[imageKey] : null;
+};
+
+const getMemberNameById = (id) => {
+  const member = findMemberById(id);
+  if (!member) return `#${id}`;
+  return getFullName(member);
+};
+
+const renderMemberReferenceSummary = (value) => {
+  const ids = parseMemberIds(value);
+  if (ids.length === 0) return null;
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+        gap: 12,
+      }}
+    >
+      {ids.map((id) => {
+        const member = findMemberById(id);
+        if (!member) {
+          return (
+            <div
+              key={id}
+              style={{
+                padding: 12,
+                borderRadius: 10,
+                background: theme === "dark" ? "#1d1d1d" : "#f5f5f5",
+              }}
+            >
+              #{id}
+            </div>
+          );
+        }
+
+        const image = getMemberImage(member);
+
+        return (
+          <div
+            key={id}
+            style={{
+              display: "flex",
+              gap: 12,
+              alignItems: "center",
+              padding: 12,
+              borderRadius: 10,
+              background: theme === "dark" ? "#1d1d1d" : "#f5f5f5",
+            }}
+          >
+            {image ? (
+              <img
+                src={image}
+                alt={getFullName(member)}
+                style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 10 }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 10,
+                  background: "#ccc",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#555",
+                }}
+              >
+                No Image
+              </div>
+            )}
+            <div>
+              <button
+                type="button"
+                onClick={() => openMemberModal(member)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#0b5fff",
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                  padding: 0,
+                  font: "inherit",
+                  textAlign: "left",
+                }}
+              >
+                {getFullName(member)}
+              </button>
+              <div style={{ opacity: 0.75, fontSize: 12 }}>ID: {member.id || id}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const parseMemberIds = (value) =>
+  String(value || "")
+    .split(/[,;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const getDiscipleFieldKey = () =>
+  headers.find((key) => isDisciplesKey(key));
+
+const getLeaderFieldKey = () =>
+  headers.find((key) => isLeaderKey(key));
+
+const getDiscipleOptions = () => {
+  const selectedIds = getDiscipleIds();
+  return data
+    .filter((member) => String(member.id) !== String(form.id))
+    .map((member) => ({
+      id: String(member.id),
+      name: getFullName(member),
+    }))
+    .sort((a, b) => {
+      const aSelected = selectedIds.includes(a.id);
+      const bSelected = selectedIds.includes(b.id);
+      if (aSelected !== bSelected) return aSelected ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+};
+
+const getLeaderOptions = () => {
+  const selectedLeaderId = getLeaderId();
+  return data
+    .filter((member) => String(member.id) !== String(form.id))
+    .map((member) => ({
+      id: String(member.id),
+      name: getFullName(member),
+    }))
+    .sort((a, b) => {
+      if (a.id === selectedLeaderId && b.id !== selectedLeaderId) return -1;
+      if (b.id === selectedLeaderId && a.id !== selectedLeaderId) return 1;
+      return a.name.localeCompare(b.name);
+    });
+};
+
+const getDiscipleIds = () => {
+  const fieldKey = getDiscipleFieldKey();
+  return fieldKey ? parseMemberIds(form[fieldKey]) : [];
+};
+
+const getLeaderId = () => {
+  const fieldKey = getLeaderFieldKey();
+  return fieldKey ? String(form[fieldKey] || "") : "";
+};
+
+const setLeaderId = (id) => {
+  const fieldKey = getLeaderFieldKey();
+  if (!fieldKey) return;
+  handleChange(fieldKey, id);
+};
+
+const setDiscipleIds = (ids) => {
+  const fieldKey = getDiscipleFieldKey();
+  if (!fieldKey) return;
+  handleChange(fieldKey, ids.join(","));
+};
+
+const toggleDiscipleSelection = (id, checked) => {
+  const ids = getDiscipleIds();
+  const next = checked
+    ? Array.from(new Set([...ids, id]))
+    : ids.filter((item) => item !== id);
+  setDiscipleIds(next);
+};
+
+const openMemberModal = (row) => setSelectedMember(row);
+const closeMemberModal = () => setSelectedMember(null);
+
+const getMemberReferenceElements = (value) => {
+  const ids = parseMemberIds(value);
+  if (ids.length === 0) return null;
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+        gap: 12,
+      }}
+    >
+      {ids.map((id, index) => {
+        const member = findMemberById(id);
+        const name = getMemberNameById(id);
+        const image = member ? getMemberImage(member) : null;
+
+        return (
+          <div
+            key={`${id}-${index}`}
+            style={{
+              display: "flex",
+              gap: 12,
+              alignItems: "center",
+              padding: 12,
+              borderRadius: 10,
+             
+            }}
+          >
+           
+            <div>
+              {member ? (
+                <button
+                  type="button"
+                  onClick={() => openMemberModal(member)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#0b5fff",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                    padding: 0,
+                    font: "inherit",
+                    textAlign: "left",
+                  }}
+                >
+                  {name}
+                </button>
+              ) : (
+                <div>{name}</div>
+              )}
+             
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const getSelectOptions = (key) => {
   const k = key.trim().toLowerCase();
 
   switch (k) {
@@ -951,6 +1243,130 @@ const getLabel = (key) => {
               </option>
             ))}
           </select>
+        ) : isLeaderKey(key) ? (
+          <div style={{ position: "relative" }}>
+            <input
+              type="text"
+              value={leaderSearch}
+              onChange={(e) => setLeaderSearch(e.target.value)}
+              placeholder="Search leader..."
+              style={{
+                width: "100%",
+                padding: "10px",
+                borderRadius: 8,
+                border: "1px solid #ccc",
+                marginBottom: 8,
+              }}
+            />
+            <div
+              style={{
+                maxHeight: 220,
+                overflowY: "auto",
+                padding: 8,
+                border: "1px solid #ccc",
+                borderRadius: 8,
+                background: theme === "dark" ? "#1b1b1b" : "#fff",
+              }}
+            >
+              {getLeaderOptions()
+                .filter((option) =>
+                  option.name.toLowerCase().includes(leaderSearch.toLowerCase())
+                )
+                .map((option) => (
+                  <label
+                    key={option.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "6px 0",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="careGroupLeader"
+                      checked={getLeaderId() === option.id}
+                      onChange={() => setLeaderId(option.id)}
+                    />
+                    <span>{option.name}</span>
+                  </label>
+                ))}
+              {getLeaderOptions().filter((option) =>
+                option.name.toLowerCase().includes(leaderSearch.toLowerCase())
+              ).length === 0 && (
+                <div style={{ opacity: 0.7, padding: 10 }}>
+                  No leader found.
+                </div>
+              )}
+            </div>
+          </div>
+        ) : isDisciplesKey(key) ? (
+          <div style={{ position: "relative" }}>
+            <input
+              type="text"
+              value={discipleSearch}
+              onChange={(e) => setDiscipleSearch(e.target.value)}
+              placeholder="Search disciples..."
+              style={{
+                width: "100%",
+                padding: "10px",
+                borderRadius: 8,
+                border: "1px solid #ccc",
+                marginBottom: 8,
+              }}
+            />
+            <div
+              style={{
+                maxHeight: 220,
+                overflowY: "auto",
+                padding: 8,
+                border: "1px solid #ccc",
+                borderRadius: 8,
+                background: theme === "dark" ? "#1b1b1b" : "#fff",
+              }}
+            >
+              {getDiscipleOptions()
+                .filter((option) =>
+                  option.name
+                    .toLowerCase()
+                    .includes(discipleSearch.toLowerCase())
+                )
+                .map((option) => {
+                  const checked = getDiscipleIds().includes(option.id);
+                  return (
+                    <label
+                      key={option.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        padding: "6px 0",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) =>
+                          toggleDiscipleSelection(option.id, e.target.checked)
+                        }
+                      />
+                      <span>{option.name}</span>
+                    </label>
+                  );
+                })}
+              {getDiscipleOptions().filter((option) =>
+                option.name
+                  .toLowerCase()
+                  .includes(discipleSearch.toLowerCase())
+              ).length === 0 && (
+                <div style={{ opacity: 0.7, padding: 10 }}>
+                  No disciples found.
+                </div>
+              )}
+            </div>
+          </div>
         ) : (
           key.toLowerCase() === "image" ? (
   <div>
@@ -1023,6 +1439,124 @@ const getLabel = (key) => {
         Cancel
       </button>
       </div>
+      </div>
+    </div>
+  </div>
+)}
+
+{selectedMember && (
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0,0,0,0.55)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1000,
+      padding: 20,
+    }}
+    onClick={closeMemberModal}
+  >
+    <div
+      style={{
+        background: theme === "dark" ? "#222" : "#fff",
+        color: theme === "dark" ? "#fff" : "#000",
+        padding: 24,
+        borderRadius: 14,
+        width: "100%",
+        maxWidth: 700,
+        maxHeight: "90vh",
+        overflowY: "auto",
+        position: "relative",
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        onClick={closeMemberModal}
+        style={{
+          position: "absolute",
+          top: 16,
+          right: 16,
+          padding: "8px 14px",
+          cursor: "pointer",
+        }}
+      >
+        Close
+      </button>
+      <div style={{ display: "flex", gap: 18, alignItems: "center", marginBottom: 18 }}>
+        {getMemberImage(selectedMember) ? (
+          <img
+            src={getMemberImage(selectedMember)}
+            alt={getFullName(selectedMember)}
+            style={{ width: 120, height: 120, objectFit: "cover", borderRadius: 14 }}
+          />
+        ) : (
+          <div
+            style={{
+              width: 120,
+              height: 120,
+              borderRadius: 14,
+              background: "#f0f0f0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#555",
+              fontSize: 14,
+              textAlign: "center",
+              padding: 10,
+            }}
+          >
+            No Image
+          </div>
+        )}
+        <div>
+          <h2 style={{ margin: 0 }}>{getFullName(selectedMember)}</h2>
+          <div style={{ opacity: 0.75, marginTop: 6 }}>
+            ID: {selectedMember.id || "N/A"}
+          </div>
+        </div>
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gap: 12,
+          marginBottom: 20,
+        }}
+      >
+        {headers.map((key) => {
+          if (key.toLowerCase() === "image") return null;
+          if (isLeaderKey(key) || isDisciplesKey(key)) return null;
+
+          return (
+            <div key={key} style={{ lineHeight: 1.6 }}>
+              <strong>{getLabel(key)}:</strong>{" "}
+              {normalizeKey(key).includes("date")
+                ? formatDate(selectedMember[key])
+                : selectedMember[key] || "-"}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ marginBottom: 24 }}>
+        <strong>Care Group Leader:</strong>
+        <div style={{ marginTop: 12 }}>
+          {renderMemberReferenceSummary(
+            selectedMember[headers.find((key) => isLeaderKey(key))]
+          ) || "None"}
+        </div>
+      </div>
+      <div>
+        <strong>Disciples:</strong>
+        <div style={{ marginTop: 12 }}>
+          {renderMemberReferenceSummary(
+            selectedMember[headers.find((key) => isDisciplesKey(key))]
+          ) || "None"}
+        </div>
       </div>
     </div>
   </div>
@@ -1153,37 +1687,66 @@ const getLabel = (key) => {
 
         <tbody>
           {paginatedData.map((row, i) => (
-            <tr key={i}>
+            <tr
+              key={i}
+              onClick={() => openMemberModal(row)}
+              style={{ cursor: "pointer" }}
+            >
               <td>{startIndex + i + 1}</td>
 
-              {headers.map((key) => (
-              <td key={key}>
-  {key.toLowerCase() === "image" ? (
-    row[key] ? (
-      <img
-        src={row[key]}
-        alt="member"
-        style={{
-          width: 60,
-          height: 60,
-          objectFit: "cover",
-          borderRadius: 8,
-        }}
-      />
-    ) : (
-      "No Image"
-    )
-  ) : key.toLowerCase().includes("date") ? (
-    formatDate(row[key])
-  ) : (
-    row[key]
-  )}
-</td>
-              ))}
+              {headers.map((key) => {
+                const normalized = normalizeKey(key);
+                const isFirstName = normalized === "first name" || normalized === "fullname";
+
+                return (
+                  <td key={key}>
+                    {key.toLowerCase() === "image" ? (
+                      row[key] ? (
+                        <img
+                          src={row[key]}
+                          alt="member"
+                          style={{
+                            width: 60,
+                            height: 60,
+                            objectFit: "cover",
+                            borderRadius: 8,
+                          }}
+                        />
+                      ) : (
+                        "No Image"
+                      )
+                    ) : normalized.includes("date") ? (
+                      formatDate(row[key])
+                    ) : isLeaderKey(key) ? (
+                      row[key]
+                        ? getMemberNameById(row[key])
+                        : "-"
+                    ) : isDisciplesKey(key) ? (
+                      `${parseMemberIds(row[key] || "").length} disciple${parseMemberIds(row[key] || "").length === 1 ? "" : "s"}`
+                    ) : isFirstName ? (
+                      getFirstName(row) || row[key]
+                    ) : (
+                      row[key]
+                    )}
+                  </td>
+                );
+              })}
 
               <td>
-                <button onClick={() => startEdit(row)}>Edit</button>
-                <button onClick={() => handleDelete(row.id)}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    startEdit(row);
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(row.id);
+                  }}
+                >
                   Delete
                 </button>
               </td>
