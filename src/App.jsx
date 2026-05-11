@@ -505,10 +505,10 @@ const generatePdfPreview = () => {
     (key) => key.toLowerCase() !== "image"
   );
 
-  const tableColumn = pdfHeaders;
+ const tableColumn = [...pdfHeaders, "Disciples"];
 
-const tableRows = sortedData.map((row) =>
-  pdfHeaders.map((key) => {
+const tableRows = sortedData.map((row) => {
+  const rowData = pdfHeaders.map((key) => {
     const value = row[key] || "";
 
     if (key.toLowerCase().includes("date")) {
@@ -519,13 +519,14 @@ const tableRows = sortedData.map((row) =>
       return value ? getMemberNameById(value) : "";
     }
 
-    if (isDisciplesKey(key)) {
-      return String(parseMemberIds(value).length);
-    }
-
     return String(value);
-  })
-);
+  });
+
+  // add computed disciple count
+  rowData.push(String(getDiscipleCount(row)));
+
+  return rowData;
+});
 
   autoTable(doc, {
     head: [tableColumn],
@@ -582,14 +583,14 @@ const getLabel = (key) => {
 };
 
 const isLeaderKey = (key) => normalizeKey(key).includes("care group leader");
-const isDisciplesKey = (key) => normalizeKey(key).includes("disciple");
+
 const findMemberById = (id) => {
   if (id === undefined || id === null) return null;
+
   const normalizedId = String(id).trim();
+
   return data.find(
-    (member) =>
-      String(member.id) === normalizedId ||
-      String(member._rowIndex) === normalizedId
+    (member) => String(member.id).trim() === normalizedId
   );
 };
 
@@ -629,6 +630,22 @@ const getMemberNameById = (id) => {
   const member = findMemberById(id);
   if (!member) return `#${id}`;
   return getFullName(member);
+};
+
+const getMemberDisciples = (member) => {
+  const leaderKey = getLeaderFieldKey();
+
+  if (!leaderKey || !member?.id) return [];
+
+  return data.filter(
+    (row) =>
+      String(row[leaderKey] || "").trim() ===
+      String(member.id).trim()
+  );
+};
+
+const getDiscipleCount = (member) => {
+  return getMemberDisciples(member).length;
 };
 
 const renderMemberReferenceSummary = (value) => {
@@ -728,8 +745,7 @@ const parseMemberIds = (value) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
-const getDiscipleFieldKey = () =>
-  headers.find((key) => isDisciplesKey(key));
+
 
 const getLeaderFieldKey = () =>
   headers.find((key) => isLeaderKey(key));
@@ -752,6 +768,7 @@ const getDiscipleOptions = () => {
 
 const getLeaderOptions = () => {
   const selectedLeaderId = getLeaderId();
+
   return data
     .filter((member) => String(member.id) !== String(form.id))
     .map((member) => ({
@@ -759,9 +776,12 @@ const getLeaderOptions = () => {
       name: getFullName(member),
     }))
     .sort((a, b) => {
+      // keep selected leader on top
       if (a.id === selectedLeaderId && b.id !== selectedLeaderId) return -1;
       if (b.id === selectedLeaderId && a.id !== selectedLeaderId) return 1;
-      return a.name.localeCompare(b.name);
+
+      // numeric id sorting
+      return Number(a.id) - Number(b.id);
     });
 };
 
@@ -777,10 +797,11 @@ const getLeaderId = () => {
 
 const setLeaderId = (id) => {
   const fieldKey = getLeaderFieldKey();
-  if (!fieldKey) return;
-  handleChange(fieldKey, id);
-};
 
+  if (!fieldKey) return;
+
+  handleChange(fieldKey, String(id).trim());
+};
 const setDiscipleIds = (ids) => {
   const fieldKey = getDiscipleFieldKey();
   if (!fieldKey) return;
@@ -1286,7 +1307,10 @@ const getSelectOptions = (key) => {
                     <input
                       type="radio"
                       name="careGroupLeader"
-                      checked={getLeaderId() === option.id}
+                      checked={
+  String(getLeaderId()).trim() ===
+  String(option.id).trim()
+}
                       onChange={() => setLeaderId(option.id)}
                     />
                     <span>{option.name}</span>
@@ -1301,72 +1325,7 @@ const getSelectOptions = (key) => {
               )}
             </div>
           </div>
-        ) : isDisciplesKey(key) ? (
-          <div style={{ position: "relative" }}>
-            <input
-              type="text"
-              value={discipleSearch}
-              onChange={(e) => setDiscipleSearch(e.target.value)}
-              placeholder="Search disciples..."
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: 8,
-                border: "1px solid #ccc",
-                marginBottom: 8,
-              }}
-            />
-            <div
-              style={{
-                maxHeight: 220,
-                overflowY: "auto",
-                padding: 8,
-                border: "1px solid #ccc",
-                borderRadius: 8,
-                background: theme === "dark" ? "#1b1b1b" : "#fff",
-              }}
-            >
-              {getDiscipleOptions()
-                .filter((option) =>
-                  option.name
-                    .toLowerCase()
-                    .includes(discipleSearch.toLowerCase())
-                )
-                .map((option) => {
-                  const checked = getDiscipleIds().includes(option.id);
-                  return (
-                    <label
-                      key={option.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        padding: "6px 0",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) =>
-                          toggleDiscipleSelection(option.id, e.target.checked)
-                        }
-                      />
-                      <span>{option.name}</span>
-                    </label>
-                  );
-                })}
-              {getDiscipleOptions().filter((option) =>
-                option.name
-                  .toLowerCase()
-                  .includes(discipleSearch.toLowerCase())
-              ).length === 0 && (
-                <div style={{ opacity: 0.7, padding: 10 }}>
-                  No disciples found.
-                </div>
-              )}
-            </div>
-          </div>
+        
         ) : (
           key.toLowerCase() === "image" ? (
   <div>
@@ -1530,7 +1489,7 @@ const getSelectOptions = (key) => {
       >
         {headers.map((key) => {
           if (key.toLowerCase() === "image") return null;
-          if (isLeaderKey(key) || isDisciplesKey(key)) return null;
+          if (isLeaderKey(key)) return null;
 
           return (
             <div key={key} style={{ lineHeight: 1.6 }}>
@@ -1550,14 +1509,93 @@ const getSelectOptions = (key) => {
           ) || "None"}
         </div>
       </div>
+     <div>
+  <strong>Disciples:</strong>
+
+  <div style={{ marginTop: 12 }}>
+    {getMemberDisciples(selectedMember).length > 0 ? (
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gap: 12,
+        }}
+      >
+        {getMemberDisciples(selectedMember).map((disciple) => {
+  const image = getMemberImage(disciple);
+
+  return (
+    <div
+      key={disciple.id}
+      style={{
+        display: "flex",
+        gap: 12,
+        alignItems: "center",
+        padding: 12,
+        borderRadius: 10,
+        background: theme === "dark" ? "#1d1d1d" : "#f5f5f5",
+      }}
+    >
+      {image ? (
+        <img
+          src={image}
+          alt={getFullName(disciple)}
+          style={{
+            width: 56,
+            height: 56,
+            objectFit: "cover",
+            borderRadius: 10,
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 10,
+            background: "#ccc",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#555",
+            fontSize: 12,
+          }}
+        >
+          No Image
+        </div>
+      )}
+
       <div>
-        <strong>Disciples:</strong>
-        <div style={{ marginTop: 12 }}>
-          {renderMemberReferenceSummary(
-            selectedMember[headers.find((key) => isDisciplesKey(key))]
-          ) || "None"}
+        <button
+          type="button"
+          onClick={() => openMemberModal(disciple)}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#0b5fff",
+            textDecoration: "underline",
+            cursor: "pointer",
+            padding: 0,
+            font: "inherit",
+            textAlign: "left",
+          }}
+        >
+          {getFullName(disciple)}
+        </button>
+
+        <div style={{ opacity: 0.7, fontSize: 12 }}>
+          ID: {disciple.id}
         </div>
       </div>
+    </div>
+  );
+})}
+      </div>
+    ) : (
+      "None"
+    )}
+  </div>
+</div>
     </div>
   </div>
 )}
@@ -1677,10 +1715,12 @@ const getSelectOptions = (key) => {
           <tr>
             <th>#</th>
             {headers.map((key) => (
-              <th key={key} onClick={() => handleSort(key)}>
-                {key}
-              </th>
-            ))}
+  <th key={key} onClick={() => handleSort(key)}>
+    {key}
+  </th>
+))}
+
+<th>Disciples</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -1721,8 +1761,6 @@ const getSelectOptions = (key) => {
                       row[key]
                         ? getMemberNameById(row[key])
                         : "-"
-                    ) : isDisciplesKey(key) ? (
-                      `${parseMemberIds(row[key] || "").length} disciple${parseMemberIds(row[key] || "").length === 1 ? "" : "s"}`
                     ) : isFirstName ? (
                       getFirstName(row) || row[key]
                     ) : (
@@ -1732,6 +1770,9 @@ const getSelectOptions = (key) => {
                 );
               })}
 
+<td>
+  {getDiscipleCount(row)}
+</td>
               <td>
                 <button
                   onClick={(e) => {
