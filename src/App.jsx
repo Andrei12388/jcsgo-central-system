@@ -12,6 +12,8 @@ function App() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 const [showForm, setShowForm] = useState(false);
+
+const [searchTerm, setSearchTerm] = useState("");
   
   const [pdfFontSize, setPdfFontSize] = useState(8);
 const [pdfCellPadding, setPdfCellPadding] = useState(1);
@@ -325,7 +327,19 @@ const startEdit = (row) => {
     }
   };
 
-  const sortedData = [...data].sort((a, b) => {
+  const filteredData = data.filter((row) => {
+  return headers.some((key) => {
+    const value = row[key];
+
+    if (!value) return false;
+
+    return String(value)
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+  });
+});
+
+const sortedData = [...filteredData].sort((a, b) => {
     if (!sortKey) return 0;
 
     const valA = a[sortKey];
@@ -565,6 +579,28 @@ const getLabel = (key) => {
         ) : (
           key.toLowerCase() === "image" ? (
   <div>
+     {form[key] && (
+      <div style={{
+        display: "flex",
+        flexDirection: "column",
+        marginBottom: 10,
+        justifyItems: "center",
+        alignItems: "center",
+      }}>
+      <img
+        src={form[key]}
+        alt="preview"
+        style={{
+
+          width: 100,
+          height: 100,
+          objectFit: "cover",
+          marginTop: 10,
+          borderRadius: 8,
+        }}
+      />
+      </div>
+    )}
     <input
       type="file"
       accept="image/*"
@@ -578,20 +614,6 @@ const getLabel = (key) => {
         handleChange(key, base64);
       }}
     />
-
-    {form[key] && (
-      <img
-        src={form[key]}
-        alt="preview"
-        style={{
-          width: 100,
-          height: 100,
-          objectFit: "cover",
-          marginTop: 10,
-          borderRadius: 8,
-        }}
-      />
-    )}
   </div>
 ) : (
   <input
@@ -691,6 +713,55 @@ const getLabel = (key) => {
 >
   Add Member
 </button>
+<input
+    type="text"
+    placeholder="Search member..."
+    value={searchTerm}
+    onChange={(e) => {
+      setSearchTerm(e.target.value);
+      setCurrentPage(1);
+    }}
+    style={{
+      marginLeft: "10px",
+      padding: "10px",
+      width: "300px",
+      borderRadius: "8px",
+      border: "1px solid #ccc",
+    }}
+  />
+
+  {/* ================= PAGINATION ================= */}
+      <div style={{ marginBottom: 10 }}>
+        <button
+          onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+        >
+          Prev
+        </button>
+
+        <span>
+          {" "}
+          Page {currentPage} of {totalPages}{" "}
+        </span>
+
+        <button
+          onClick={() =>
+            setCurrentPage((p) => Math.min(p + 1, totalPages))
+          }
+        >
+          Next
+        </button>
+
+          <select
+          value={currentPage}
+          onChange={(e) => setCurrentPage(Number(e.target.value))}
+        >
+          {Array.from({ length: totalPages }, (_, i) => (
+            <option key={i + 1} value={i + 1}>
+              Page {i + 1}
+            </option>
+          ))}
+        </select>
+      </div>
    
       <table border="1" cellPadding="8" width="100%" ref={tableRef}>
         <thead>
