@@ -375,34 +375,50 @@ const sortedData = [...filteredData].sort((a, b) => {
   );
   const totalPages = Math.ceil(sortedData.length / itemsPerPage);
 
-  const exportStatsPDF = async () => {
+ const exportStatsPDF = async () => {
   const input = statsRef.current;
 
   if (!input) return;
 
+  // capture dashboard
   const canvas = await html2canvas(input, {
     scale: 2,
   });
 
   const imgData = canvas.toDataURL("image/png");
 
+  // create pdf
   const pdf = new jsPDF("p", "mm", "a4");
 
-  const pdfWidth = pdf.internal.pageSize.getWidth();
+  // =========================
+  // IMAGE SIZE
+  // =========================
+  const pdfWidth =
+    pdf.internal.pageSize.getWidth();
 
   const pdfHeight =
     (canvas.height * pdfWidth) / canvas.width;
 
+  // =========================
+  // ADD DASHBOARD IMAGE
+  // =========================
   pdf.addImage(
-  imgData,
-  "PNG",
-  0,
-  0,
-  pdfWidth,
-  pdfHeight
-);
+    imgData,
+    "PNG",
+    0,
+    0,
+    pdfWidth,
+    pdfHeight
+  );
 
-  pdf.save("member-statistics.pdf");
+  // =========================
+  // PREVIEW AS BLOB
+  // =========================
+  const pdfBlob = pdf.output("blob");
+
+  const url = URL.createObjectURL(pdfBlob);
+
+  window.open(url);
 };
 
   // =========================
@@ -583,7 +599,7 @@ const getLabel = (key) => {
     </button>
 
     <div ref={statsRef}>
-      <h2>JCSGO 3PM Member Statistics</h2>
+     <div style={{display: "flex", alignItems: "center", gap: 10, justifyItems: "center", justifyContent: "center"}}><img src="logonotitle.png" width={100} height={50}></img> <h1>JCSGO 3PM Member Statistics</h1></div>
       <p
   style={{
     marginBottom: 20,
