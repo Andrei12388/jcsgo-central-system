@@ -12,9 +12,9 @@ import { useNotification } from "./notificationToast";
 
 
 const WEB_APP_URL =
-  "https://script.google.com/macros/s/AKfycbyYUeoQyNn4fDLNLN-Vmblp63drW7H1tMj-0wqwTpgpCUYY4epi31Wo4j1Pr97xKAlI/exec";
+  "https://script.google.com/macros/s/AKfycbxOGv2Dz4LF8g2HodyKYvtE7lJ_6tkIPZKVEL4QUYfNhYk7GwucSUTKuANHooKwtyrO/exec";
 
-export default function Calendar() {
+export default function Calendar({ selectedTime }) {
   const { notify } = useNotification();
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -52,7 +52,9 @@ export default function Calendar() {
 
   // ================= FETCH EVENTS =================
   const fetchEvents = () => {
-    fetch(WEB_APP_URL + "?type=events")
+    const timeParam = selectedTime ? `&time=${encodeURIComponent(selectedTime)}` : "";
+
+    fetch(`${WEB_APP_URL}?type=events${timeParam}`)
       .then((res) => res.json())
       .then((res) => {
         const mapped = (res.data || []).map((ev) => ({
@@ -74,7 +76,7 @@ export default function Calendar() {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [selectedTime]);
 
   // ================= ADD EVENT =================
  const saveEvent = async () => {
@@ -86,6 +88,7 @@ export default function Calendar() {
       body: JSON.stringify({
         action: "addEvent",
         data: newEvent,
+        time: selectedTime,
       }),
     });
 
@@ -291,6 +294,7 @@ const tableData = sortedEvents.map((ev) => [
         action: "editEvent",
         id: selectedEventData.id,
         data: selectedEventData,
+        time: selectedTime,
       }),
     });
 
@@ -323,6 +327,7 @@ const tableData = sortedEvents.map((ev) => [
       body: JSON.stringify({
         action: "deleteEvent",
         id: selectedEventData.id,
+        time: selectedTime,
       }),
     });
 

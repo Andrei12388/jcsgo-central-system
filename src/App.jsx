@@ -48,12 +48,27 @@ const [showCalendar, setShowCalendar] = useState(false);
 
 const CELEBRATION_OPTIONS = ["8am Central", "10:30am Central", "3pm Central"];
 
+const [loggedIn, setLoggedIn] = useState(false);
+const [loginUser, setLoginUser] = useState("");
+const [loginPass, setLoginPass] = useState("");
+const [loginError, setLoginError] = useState("");
+
+const [selectedCelebration, setSelectedCelebration] = useState("");
+const [selectedTitle, setSelectedTitle] = useState("");
+const [hasLandingSelection, setHasLandingSelection] = useState(false);
+
+const LANDING_OPTIONS = [
+  { label: "8AM", celebration: "8am Central", title: "8AM Celebration" },
+  { label: "10:30AM", celebration: "10:30am Central", title: "10:30AM Celebration" },
+  { label: "3PM", celebration: "3pm Central", title: "3PM Celebration" },
+];
+
 const CATEGORY_OPTIONS = ["Men", "Women", "Young Boys", "Young Girls"];
 
 const MARITAL_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
 
   const WEB_APP_URL =
-    "https://script.google.com/macros/s/AKfycbyYUeoQyNn4fDLNLN-Vmblp63drW7H1tMj-0wqwTpgpCUYY4epi31Wo4j1Pr97xKAlI/exec";
+    "https://script.google.com/macros/s/AKfycbxOGv2Dz4LF8g2HodyKYvtE7lJ_6tkIPZKVEL4QUYfNhYk7GwucSUTKuANHooKwtyrO/exec";
 
   const tableRef = useRef(null);
   const statsRef = useRef(null);
@@ -62,12 +77,56 @@ const MARITAL_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
   // API CALL
   // =========================
   const callAPI = async (payload) => {
+    if (selectedCelebration && payload.action !== "landingSelection") {
+      payload.time = selectedCelebration;
+    }
+
     const res = await fetch(WEB_APP_URL, {
       method: "POST",
       body: JSON.stringify(payload),
     });
 
     return res.json();
+  };
+
+  const handleLandingSelect = async (option) => {
+    setSelectedCelebration(option.celebration);
+    setSelectedTitle(option.title);
+
+    try {
+      await callAPI({
+        action: "landingSelection",
+        celebration: option.celebration,
+        title: option.title,
+      });
+    } catch (error) {
+      console.error("Landing selection error", error);
+    } finally {
+      setHasLandingSelection(true);
+    }
+  };
+
+  const handleLogin = (event) => {
+    event.preventDefault();
+
+    const AUTH_USER = "admin";
+    const AUTH_PASS = "12345";
+
+    if (loginUser === AUTH_USER && loginPass === AUTH_PASS) {
+      setLoggedIn(true);
+      setLoginError("");
+      setLoginUser("");
+      setLoginPass("");
+      setHasLandingSelection(false);
+    } else {
+      setLoginError("Invalid username or password.");
+    }
+  };
+
+  const goToSelection = () => {
+    setHasLandingSelection(false);
+    setSelectedCelebration("");
+    setSelectedTitle("");
   };
 
   const formatDate = (value) => {
@@ -90,7 +149,11 @@ const MARITAL_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
   const fetchData = () => {
     setLoading(true);
 
-    fetch(WEB_APP_URL)
+    const url = selectedCelebration
+      ? `${WEB_APP_URL}?time=${encodeURIComponent(selectedCelebration)}`
+      : WEB_APP_URL;
+
+    fetch(url)
       .then((res) => res.json())
       .then((res) => {
         const fetched = res.data || [];
@@ -111,8 +174,10 @@ const MARITAL_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (hasLandingSelection) {
+      fetchData();
+    }
+  }, [hasLandingSelection, selectedCelebration]);
 
  useEffect(() => {
   document.body.className = theme;
@@ -519,6 +584,126 @@ const getLabel = (key) => {
   }
 };
 
+  if (!loggedIn) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 24,
+          padding: 20,
+          textAlign: "center",
+        }}
+      >
+        <img
+          src="logonotitle.png"
+          alt="Logo"
+          width={140}
+          height={70}
+          style={{ objectFit: "contain" }}
+        />
+        <div>
+          <h1 style={{ margin: 0 }}>JCSGO CENTRAL Login</h1>
+          <p style={{ margin: 0, opacity: 0.75 }}>
+            Enter your username and password to continue.
+          </p>
+        </div>
+        <form
+          onSubmit={handleLogin}
+          style={{ display: "flex", flexDirection: "column", gap: 12, width: 300 }}
+        >
+          <input
+            type="text"
+            value={loginUser}
+            onChange={(e) => setLoginUser(e.target.value)}
+            placeholder="Username"
+            style={{ padding: 12, borderRadius: 8, border: "1px solid #ccc" }}
+          />
+          <input
+            type="password"
+            value={loginPass}
+            onChange={(e) => setLoginPass(e.target.value)}
+            placeholder="Password"
+            style={{ padding: 12, borderRadius: 8, border: "1px solid #ccc" }}
+          />
+          {loginError && (
+            <div style={{ color: "#b00020", fontWeight: 700 }}>{loginError}</div>
+          )}
+          <button
+            type="submit"
+            style={{
+              padding: "12px 20px",
+              borderRadius: 10,
+              border: "none",
+              background: "#071141",
+              color: "#fff",
+              cursor: "pointer",
+              fontWeight: 700,
+            }}
+          >
+            Login
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  if (!hasLandingSelection) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 24,
+          padding: 20,
+          textAlign: "center",
+        }}
+      >
+        <img
+          src="logonotitle.png"
+          alt="Logo"
+          width={140}
+          height={70}
+          style={{ objectFit: "contain" }}
+        />
+        <div>
+          <h1 style={{ margin: 0 }}>JCSGO CENTRAL</h1>
+          <p style={{ margin: 0, opacity: 0.75 }}>
+            Select your celebration time below
+          </p>
+        </div>
+
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
+          {LANDING_OPTIONS.map((option) => (
+            <button
+              key={option.label}
+              onClick={() => handleLandingSelect(option)}
+              style={{
+                minWidth: 140,
+                padding: "16px 20px",
+                borderRadius: 12,
+                border: "1px solid #071141",
+                background: "#071141",
+                color: "#fff",
+                cursor: "pointer",
+                fontSize: 16,
+                fontWeight: 700,
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     
     <div style={{ padding: 20 }}>
@@ -530,20 +715,33 @@ const getLabel = (key) => {
   </div>
   
 )}
-     <div style={{display: "flex", alignItems: "center", gap: 10, justifyItems: "center", justifyContent: "center"}}><img src="logonotitle.png" width={100} height={50}></img> <h1>JCSGO 3PM System</h1></div>
-      <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-  Switch to {theme === "dark" ? "Light" : "Dark"} Mode
-</button>
+     <div style={{display: "flex", alignItems: "center", gap: 10, justifyItems: "center", justifyContent: "center"}}>
+        <img src="logonotitle.png" width={100} height={50} alt="Logo" />
+        <div>
+          <h1 style={{ margin: 0 }}>{selectedTitle || "JCSGO 3PM System"}</h1>
+        
+        </div>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
+        <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}> 
+          Switch to {theme === "dark" ? "Light" : "Dark"} Mode
+        </button>
+        <button
+          onClick={goToSelection}
+          style={{ padding: "10px 20px", cursor: "pointer" }}
+        >
+          Back to Selection
+        </button>
+      </div>
 
-
-<button
-  onClick={() => setShowCalendar((prev) => !prev)}
-  style={{
-    marginTop: 10,
-    marginBottom: 10,
-    padding: "10px 20px",
-    cursor: "pointer",
-  }}
+      <button
+        onClick={() => setShowCalendar((prev) => !prev)}
+        style={{
+          marginTop: 10,
+          marginBottom: 10,
+          padding: "10px 20px",
+          cursor: "pointer",
+        }}
 >
   {showCalendar ? "Hide Calendar" : "Show Calendar"}
 </button>
@@ -693,7 +891,7 @@ const getLabel = (key) => {
 >
   {showCalendar ? "Close Calendar" : "Show Calendar"}
 </button>
-    <Calendar />
+     <Calendar selectedTime={selectedCelebration} />
   </div>
 )}
 

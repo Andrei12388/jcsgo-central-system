@@ -1,9 +1,54 @@
 const CONFIG = {
-  SHEET_NAME: "3PM"
+  SHEET_NAME: "3PM",
+  SHEET_NAME_8AM: "8AM",
+  SHEET_NAME_1030AM: "1030AM",
+  EVENTS_SHEET: "EVENTS",
+  EVENTS_8AM: "EVENTS_8AM",
+  EVENTS_1030AM: "EVENTS_1030AM"
 };
 
-function getSheet() {
+function normalizeTimeOption(timeOption) {
+  if (!timeOption) return "3pm";
+
+  const normalized = String(timeOption).toLowerCase().trim();
+
+  if (normalized.includes("8am")) {
+    return "8am";
+  }
+
+  if (normalized.includes("10:30") || normalized.includes("1030") || normalized.includes("10.30")) {
+    return "1030am";
+  }
+
+  return "3pm";
+}
+
+function getMemberSheet(timeOption) {
+  const key = normalizeTimeOption(timeOption);
+
+  if (key === "8am") {
+    return SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEET_NAME_8AM);
+  }
+
+  if (key === "1030am") {
+    return SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEET_NAME_1030AM);
+  }
+
   return SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEET_NAME);
+}
+
+function getEventSheet(timeOption) {
+  const key = normalizeTimeOption(timeOption);
+
+  if (key === "8am") {
+    return SpreadsheetApp.getActive().getSheetByName(CONFIG.EVENTS_8AM);
+  }
+
+  if (key === "1030am") {
+    return SpreadsheetApp.getActive().getSheetByName(CONFIG.EVENTS_1030AM);
+  }
+
+  return SpreadsheetApp.getActive().getSheetByName(CONFIG.EVENTS_SHEET);
 }
 
 function jsonResponse(data) {
@@ -12,8 +57,10 @@ function jsonResponse(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function getAllData() {
-  const sheet = getSheet();
+function getAllData(timeOption) {
+  const sheet = getMemberSheet(timeOption);
+  if (!sheet) return [];
+
   const lastRow = sheet.getLastRow();
   const lastCol = sheet.getLastColumn();
 
@@ -33,8 +80,11 @@ function getAllData() {
   });
 }
 
-function addMember(data) {
-  const sheet = getSheet();
+function addMember(data, timeOption) {
+  const sheet = getMemberSheet(timeOption);
+  if (!sheet) {
+    return { status: "error", message: "Member sheet not found" };
+  }
 
   const headers = sheet
     .getRange(1, 1, 1, sheet.getLastColumn())
@@ -73,8 +123,12 @@ function addMember(data) {
   };
 }
 
-function editMember(id, data) {
-  const sheet = getSheet();
+function editMember(id, data, timeOption) {
+  const sheet = getMemberSheet(timeOption);
+  if (!sheet) {
+    return { status: "error", message: "Member sheet not found" };
+  }
+
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const values = sheet.getDataRange().getValues();
 
@@ -109,8 +163,12 @@ function editMember(id, data) {
   };
 }
 
-function deleteMember(id) {
-  const sheet = getSheet();
+function deleteMember(id, timeOption) {
+  const sheet = getMemberSheet(timeOption);
+  if (!sheet) {
+    return { status: "error", message: "Member sheet not found" };
+  }
+
   const values = sheet.getDataRange().getValues();
 
   for (let i = 1; i < values.length; i++) {
@@ -123,8 +181,8 @@ function deleteMember(id) {
   return { status: "error", message: "ID not found" };
 }
 
-function searchMember(query) {
-  const data = getAllData();
+function searchMember(query, timeOption) {
+  const data = getAllData(timeOption);
   const q = String(query).toLowerCase();
 
   const result = data.filter(row =>
@@ -139,8 +197,10 @@ function searchMember(query) {
   };
 }
 
-function getEvents() {
-  const sheet = SpreadsheetApp.getActive().getSheetByName("EVENTS");
+function getEvents(timeOption) {
+  const sheet = getEventSheet(timeOption);
+  if (!sheet) return [];
+
   const values = sheet.getDataRange().getValues();
 
   const headers = values[0];
@@ -154,8 +214,11 @@ function getEvents() {
   return data;
 }
 
-function addEvent(data) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName("EVENTS");
+function addEvent(data, timeOption) {
+  const sheet = getEventSheet(timeOption);
+  if (!sheet) {
+    return { status: "error", message: "Event sheet not found" };
+  }
 
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
@@ -179,8 +242,12 @@ function addEvent(data) {
   };
 }
 
-function editEvent(id, data) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName("EVENTS");
+function editEvent(id, data, timeOption) {
+  const sheet = getEventSheet(timeOption);
+  if (!sheet) {
+    return { status: "error", message: "Event sheet not found" };
+  }
+
   const values = sheet.getDataRange().getValues();
   const headers = values[0];
 
@@ -201,8 +268,12 @@ function editEvent(id, data) {
   return { status: "error", message: "Not found" };
 }
 
-function deleteEvent(id) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName("EVENTS");
+function deleteEvent(id, timeOption) {
+  const sheet = getEventSheet(timeOption);
+  if (!sheet) {
+    return { status: "error", message: "Event sheet not found" };
+  }
+
   const values = sheet.getDataRange().getValues();
 
   for (let i = 1; i < values.length; i++) {
@@ -218,17 +289,18 @@ function deleteEvent(id) {
 function doGet(e) {
   try {
     const type = e.parameter.type;
+    const timeOption = e.parameter.time;
 
     if (type === "events") {
       return jsonResponse({
         status: "success",
-        data: getEvents()
+        data: getEvents(timeOption)
       });
     }
 
     return jsonResponse({
       status: "success",
-      data: getAllData()
+      data: getAllData(timeOption)
     });
 
   } catch (err) {
@@ -242,29 +314,30 @@ function doGet(e) {
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
+    const timeOption = body.time;
 
     switch (body.action) {
 
       case "add":
-        return jsonResponse(addMember(body.data));
+        return jsonResponse(addMember(body.data, timeOption));
 
       case "edit":
-        return jsonResponse(editMember(body.id, body.data));
+        return jsonResponse(editMember(body.id, body.data, timeOption));
 
       case "delete":
-        return jsonResponse(deleteMember(body.id));
+        return jsonResponse(deleteMember(body.id, timeOption));
 
       case "search":
-        return jsonResponse(searchMember(body.query));
+        return jsonResponse(searchMember(body.query, timeOption));
 
       case "addEvent":
-        return jsonResponse(addEvent(body.data));
+        return jsonResponse(addEvent(body.data, timeOption));
 
       case "editEvent":
-       return jsonResponse(editEvent(body.id, body.data));
+       return jsonResponse(editEvent(body.id, body.data, timeOption));
 
       case "deleteEvent":
-       return jsonResponse(deleteEvent(body.id));
+       return jsonResponse(deleteEvent(body.id, timeOption));
 
       default:
         return jsonResponse({
