@@ -1,19 +1,21 @@
 import { useEffect, useState, useRef } from "react";
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import autoTable from "jspdf-autotable";
 import "./App.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Calendar from "./components/calendar";
 import { useNotification } from "./components/notificationToast";
+import StatsBarGraph from "./components/StatsBarGraph";
 
 function App() {
   const { notify } = useNotification();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 const [showForm, setShowForm] = useState(false);
-
 const [searchTerm, setSearchTerm] = useState("");
+const [showStats, setShowStats] = useState(false);
   
   const [pdfFontSize, setPdfFontSize] = useState(8);
 const [pdfCellPadding, setPdfCellPadding] = useState(1);
@@ -54,6 +56,7 @@ const MARITAL_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
     "https://script.google.com/macros/s/AKfycbyYUeoQyNn4fDLNLN-Vmblp63drW7H1tMj-0wqwTpgpCUYY4epi31Wo4j1Pr97xKAlI/exec";
 
   const tableRef = useRef(null);
+  const statsRef = useRef(null);
 
   // =========================
   // API CALL
@@ -293,6 +296,14 @@ const startEdit = (row) => {
   }
 };
 
+const getCurrentDate = () => {
+  return new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
   // =========================
   // DELETE
   // =========================
@@ -363,6 +374,36 @@ const sortedData = [...filteredData].sort((a, b) => {
     startIndex + itemsPerPage
   );
   const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+
+  const exportStatsPDF = async () => {
+  const input = statsRef.current;
+
+  if (!input) return;
+
+  const canvas = await html2canvas(input, {
+    scale: 2,
+  });
+
+  const imgData = canvas.toDataURL("image/png");
+
+  const pdf = new jsPDF("p", "mm", "a4");
+
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+
+  const pdfHeight =
+    (canvas.height * pdfWidth) / canvas.width;
+
+  pdf.addImage(
+  imgData,
+  "PNG",
+  0,
+  0,
+  pdfWidth,
+  pdfHeight
+);
+
+  pdf.save("member-statistics.pdf");
+};
 
   // =========================
   // PDF
@@ -490,6 +531,120 @@ const getLabel = (key) => {
 >
   {showCalendar ? "Hide Calendar" : "Show Calendar"}
 </button>
+<button
+  onClick={() => setShowStats((prev) => !prev)}
+  style={{
+    marginTop: 10,
+    marginBottom: 10,
+    padding: "10px 20px",
+    cursor: "pointer",
+  }}
+>
+  {showStats ? "Hide Statistics" : "Show Statistics"}
+</button>
+
+{showStats && (
+  <div
+    style={{
+      position: "fixed",
+      top: "15px",
+      left: "10px",
+      width: "97%",
+      height: "92vh",
+      background: theme === "dark" ? "#222" : "#fff",
+      borderRadius: "12px",
+      padding: "20px",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+      zIndex: 1000,
+      overflowY: "auto",
+    }}
+  >
+    <button
+      onClick={() => setShowStats(false)}
+      style={{
+        position: "absolute",
+        top: 10,
+        right: 25,
+        padding: "10px 20px",
+        cursor: "pointer",
+      }}
+    >
+      Close Statistics
+    </button>
+
+    <button
+      onClick={exportStatsPDF}
+      style={{
+        marginBottom: 20,
+        padding: "10px 20px",
+      }}
+    >
+      Export Statistics PDF
+    </button>
+
+    <div ref={statsRef}>
+      <h2>JCSGO 3PM Member Statistics</h2>
+      <p
+  style={{
+    marginBottom: 20,
+    fontSize: 16,
+    opacity: 0.8,
+  }}
+>
+  Current Date: {getCurrentDate()}
+</p>
+
+      {/* TOTAL MEMBERS */}
+      <div
+        style={{
+          background: "#071141",
+          color: "#fff",
+          padding: 10,
+          borderRadius: 10,
+          marginBottom: 20,
+          textAlign: "center",
+          fontSize: 20,
+          fontWeight: "bold",
+        }}
+      >
+        Total Members: {data.length}
+      </div>
+
+      {/* GRID */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 20,
+        }}
+      >
+        <StatsBarGraph
+          data={data}
+          field="Status"
+          title="Status Count"
+        />
+
+        <StatsBarGraph
+          data={data}
+          field="Celebration"
+          title="Celebration Count"
+        />
+
+        <StatsBarGraph
+          data={data}
+          field="Category"
+          title="Category Count"
+        />
+
+        <StatsBarGraph
+          data={data}
+          field="Marital Status"
+          title="Marital Status Count"
+        />
+      </div>
+    </div>
+  </div>
+)}
 
 {showCalendar && (
   <div
