@@ -67,6 +67,8 @@ const CATEGORY_OPTIONS = ["Men", "Women", "Young Boys", "Young Girls"];
 
 const MARITAL_OPTIONS = ["Single", "Married", "Divorced", "Widowed"];
 
+const MINISTRY_OPTIONS = ["Music", "Dance", "Program", "MultiMedia"];
+
   const WEB_APP_URL =
     "https://script.google.com/macros/s/AKfycbxOGv2Dz4LF8g2HodyKYvtE7lJ_6tkIPZKVEL4QUYfNhYk7GwucSUTKuANHooKwtyrO/exec";
 
@@ -547,6 +549,7 @@ const FIELD_LABELS = {
   "marital status": "Marital Status",
   category: "Category",
   celebration: "Celebration Time",
+  ministry: "Ministry",
 
   contact: "Contact Number",
   "phone number": "Phone Number",
@@ -579,7 +582,10 @@ const getLabel = (key) => {
     case "marital status":
       return MARITAL_OPTIONS;
 
-    default:
+    case "ministry":
+      return MINISTRY_OPTIONS;
+
+          default:
       return null;
   }
 };
@@ -797,7 +803,7 @@ const getLabel = (key) => {
     </button>
 
     <div ref={statsRef}>
-     <div style={{display: "flex", alignItems: "center", gap: 10, justifyItems: "center", justifyContent: "center"}}><img src="logonotitle.png" width={100} height={50}></img> <h1>JCSGO 3PM Member Statistics</h1></div>
+     <div style={{display: "flex", alignItems: "center", gap: 10, justifyItems: "center", justifyContent: "center"}}><img src="logonotitle.png" width={100} height={50}></img>  <h1 style={{ margin: 0 }}>{selectedTitle || "JCSGO 3PM System"}</h1></div>
       <p
   style={{
     marginBottom: 20,
@@ -840,8 +846,8 @@ const getLabel = (key) => {
 
         <StatsBarGraph
           data={data}
-          field="Celebration"
-          title="Celebration Count"
+          field="Ministry"
+          title="Ministry Count"
         />
 
         <StatsBarGraph

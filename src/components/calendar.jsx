@@ -357,7 +357,7 @@ const tableData = sortedEvents.map((ev) => [
     <p>Processing...</p>
   </div>
 )}
-     
+      <div style={{display: "flex", alignItems: "center", gap: 10, justifyItems: "center", justifyContent: "center"}}><img src="logonotitle.png" width={100} height={50}></img>  <h1 style={{ margin: 0 }}>{selectedTime || "JCSGO 3PM System"}</h1></div>
       <h2>Events Calendar</h2>
 <button onClick={exportMonthPDF}>
   Export This Month PDF
