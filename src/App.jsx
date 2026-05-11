@@ -530,7 +530,7 @@ const getLabel = (key) => {
   </div>
   
 )}
-     <div style={{display: "flex", alignItems: "center", gap: 10, justifyItems: "center", justifyContent: "center"}}><img src="logonotitle.png" width={100} height={50}></img> <h1>JCSGO 3PM Master List</h1></div>
+     <div style={{display: "flex", alignItems: "center", gap: 10, justifyItems: "center", justifyContent: "center"}}><img src="logonotitle.png" width={100} height={50}></img> <h1>JCSGO 3PM System</h1></div>
       <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
   Switch to {theme === "dark" ? "Light" : "Dark"} Mode
 </button>
