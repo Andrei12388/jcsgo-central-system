@@ -866,7 +866,7 @@ const getLabel = (key) => {
       onChange={(e) => setPdfFontSize(Number(e.target.value))}
       style={{ marginLeft: "10px" }}
     />
-     <button onClick={generatePdfPreview}>Export PDF</button>
+     <button onClick={generatePdfPreview}>Export Members PDF</button>
   </div>
      
 
