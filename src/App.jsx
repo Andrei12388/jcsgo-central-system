@@ -17,7 +17,7 @@ const [showForm, setShowForm] = useState(false);
 const [searchTerm, setSearchTerm] = useState("");
 const [showStats, setShowStats] = useState(false);
   
-  const [pdfFontSize, setPdfFontSize] = useState(8);
+  const [pdfFontSize, setPdfFontSize] = useState(6);
 const [pdfCellPadding, setPdfCellPadding] = useState(1);
 const [actionLoading, setActionLoading] = useState(false);
 
@@ -623,7 +623,21 @@ const getFirstName = (row) => {
 
 const getMemberImage = (row) => {
   const imageKey = headers.find((key) => normalizeKey(key) === "image");
-  return imageKey ? row[imageKey] : null;
+  const imageValue = imageKey ? String(row[imageKey] || "").trim() : "";
+  if (imageValue) return imageValue;
+
+  const categoryKey = headers.find((key) => normalizeKey(key) === "category");
+  const categoryValue = categoryKey ? String(row[categoryKey] || "").trim().toLowerCase() : "";
+
+  if (categoryValue.includes("women") || categoryValue.includes("girl")) {
+    return "/female.jpg";
+  }
+
+  if (categoryValue.includes("men") || categoryValue.includes("boy")) {
+    return "/male.jpg";
+  }
+
+  return null;
 };
 
 const getMemberNameById = (id) => {
@@ -1489,6 +1503,7 @@ const getSelectOptions = (key) => {
       >
         {headers.map((key) => {
           if (key.toLowerCase() === "image") return null;
+          if (key.toLowerCase() === "id") return null;
           if (isLeaderKey(key)) return null;
 
           return (
@@ -1741,20 +1756,23 @@ const getSelectOptions = (key) => {
                 return (
                   <td key={key}>
                     {key.toLowerCase() === "image" ? (
-                      row[key] ? (
-                        <img
-                          src={row[key]}
-                          alt="member"
-                          style={{
-                            width: 60,
-                            height: 60,
-                            objectFit: "cover",
-                            borderRadius: 8,
-                          }}
-                        />
-                      ) : (
-                        "No Image"
-                      )
+                      (() => {
+                        const image = getMemberImage(row);
+                        return image ? (
+                          <img
+                            src={image}
+                            alt="member"
+                            style={{
+                              width: 60,
+                              height: 60,
+                              objectFit: "cover",
+                              borderRadius: 8,
+                            }}
+                          />
+                        ) : (
+                          "No Image"
+                        );
+                      })()
                     ) : normalized.includes("date") ? (
                       formatDate(row[key])
                     ) : isLeaderKey(key) ? (
