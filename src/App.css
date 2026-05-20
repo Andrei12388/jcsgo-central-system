@@ -9,3 +9,104 @@ button {
   cursor: pointer;
 }
 
+/* VINE ATTENDANCE RESPONSIVE STYLES */
+.vine-attendance__month-buttons,
+.vine-attendance__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vine-attendance__month-buttons button,
+.vine-attendance__controls > * {
+  min-width: 0;
+}
+
+.vine-attendance__table-wrap {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.vine-attendance__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.vine-attendance__table th,
+.vine-attendance__table td {
+  border: 1px solid #ccc;
+  padding: 10px;
+  text-align: left;
+}
+
+.vine-attendance__flash {
+  color: #10b981;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 860px) {
+  .vine-attendance__month-buttons,
+  .vine-attendance__controls {
+    flex-direction: column;
+  }
+
+  .vine-attendance__month-buttons button,
+  .vine-attendance__controls select,
+  .vine-attendance__controls button {
+    width: 100%;
+  }
+
+  .vine-attendance__table {
+    display: block;
+  }
+
+  .vine-attendance__table thead {
+    display: none;
+  }
+
+  .vine-attendance__table tbody,
+  .vine-attendance__table tr {
+    display: block;
+    width: 100%;
+    margin-bottom: 14px;
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 10px;
+  }
+
+  .vine-attendance__table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 8px;
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .vine-attendance__table td:last-child {
+    border-bottom: none;
+  }
+
+  .vine-attendance__table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    margin-right: 10px;
+    color: #111;
+    flex: 1;
+    min-width: 40%;
+  }
+
+  .vine-attendance__table td > * {
+    flex: 1.25;
+    min-width: 0;
+  }
+
+  .vine-attendance__table select,
+  .vine-attendance__table input,
+  .vine-attendance__table button {
+    width: 100%;
+  }
+}
+

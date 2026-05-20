@@ -295,12 +295,12 @@ const updateBuffer = (memberId, field, value) => {
   };
 
   return (
-    <div style={{ padding: 12,  borderRadius: 8 }}>
-      {savedFlash && <div style={{ color: "green", fontWeight: "bold", marginBottom: 8 }}>✓ Saved!</div>}
-      <h3>Vine Attendance</h3>
+    <div className="vine-attendance" style={{ padding: 12,  borderRadius: 8 }}>
+      {savedFlash && <div className="vine-attendance__flash">✓ Saved!</div>}
+      <h3>JCSGO 3PM Vine Attendance 2026</h3>
 
       {/* MONTH BUTTONS */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+      <div className="vine-attendance__month-buttons" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
         {MONTHS.map((month) => (
           <button
             key={month}
@@ -326,7 +326,7 @@ const updateBuffer = (memberId, field, value) => {
       </div>
 
       {/* CONTROLS */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+      <div className="vine-attendance__controls" style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
         <select value={selectedVine} onChange={handleSelect} disabled={loading}>
           <option value="">
             {loading ? "-- Loading vines --" : "-- Select Vine --"}
@@ -424,15 +424,16 @@ const updateBuffer = (memberId, field, value) => {
       )}
 
       {members.length > 0 && !loading && (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr >
-              <th style={{ padding: 8,  textAlign: "left" }}>ID</th>
-              <th style={{ padding: 8,  textAlign: "left" }}>Name</th>
-              
-              {sundayWeeks.length > 0 && (
-                <th colSpan={sundayWeeks.length} style={{ padding: 8,  textAlign: "center", }}>Sunday Attendance</th>
-              )}
+        <div className="vine-attendance__table-wrap">
+          <table className="vine-attendance__table" style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr >
+                <th style={{ padding: 8,  textAlign: "left" }}>ID</th>
+                <th style={{ padding: 8,  textAlign: "left" }}>Name</th>
+                
+                {sundayWeeks.length > 0 && (
+                  <th colSpan={sundayWeeks.length} style={{ padding: 8,  textAlign: "center", }}>Sunday Attendance</th>
+                )}
               {careGroupWeeks.length > 0 && (
                 <th colSpan={careGroupWeeks.length} style={{ padding: 8,  textAlign: "center",  }}>Caregroup</th>
               )}
@@ -457,10 +458,10 @@ const updateBuffer = (memberId, field, value) => {
                 key={m.id}
                
               >
-                <td style={{ padding: 8, }}>{m.id}</td>
+                <td style={{ padding: 8, }} data-label="ID">{m.id}</td>
 
                 {/* NAME BUFFER */}
-                <td style={{ padding: 8, }}>
+                <td style={{ padding: 8, }} data-label="Name">
                   <input
                     defaultValue={`${m.first_name || ""} ${m.last_name || ""}`}
                     onChange={(e) => {
@@ -474,14 +475,13 @@ const updateBuffer = (memberId, field, value) => {
 
                 {/* SUNDAY WEEKS - DROPDOWNS (ONLINE/ONSITE) */}
                 {sundayWeeks.map((wk) => (
-                  <td key={wk} style={{ textAlign: "center", padding: 8}}>
+                  <td key={wk} style={{ textAlign: "center", padding: 8}} data-label={wk}>
                     <select
                       value={editBuffer[m.id]?.[wk] ?? m[wk] ?? ""}
                       onChange={(e) => updateBuffer(m.id, wk, e.target.value)}
                       style={{ 
                         padding: "4px 6px", 
                         borderRadius: 4, 
-                       
                         minWidth: 80
                       }}
                     >
@@ -494,7 +494,7 @@ const updateBuffer = (memberId, field, value) => {
 
                  {/* CAREGROUP WEEKS - CHECKBOXES */}
                 {careGroupWeeks.map((wk) => (
-                  <td key={wk} style={{ textAlign: "center", padding: 8 }}>
+                  <td key={wk} style={{ textAlign: "center", padding: 8 }} data-label={wk}>
                     <input
                       type="checkbox"
                       checked={editBuffer[m.id]?.[wk] !== undefined ? editBuffer[m.id]?.[wk] : isChecked(m[wk])}
@@ -525,6 +525,7 @@ const updateBuffer = (memberId, field, value) => {
             ))}
           </tbody>
         </table>
+      </div>
       )}
     </div>
   );
