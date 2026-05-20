@@ -214,6 +214,13 @@ function getEvents(timeOption) {
   return data;
 }
 
+function getMembersByVine(v_id, timeOption) {
+  if (!v_id) return [];
+  const data = getAllData(timeOption);
+  const cleanV = String(v_id).trim();
+  return data.filter(row => String(row.v_id || "").trim() === cleanV);
+}
+
 function addEvent(data, timeOption) {
   const sheet = getEventSheet(timeOption);
   if (!sheet) {
@@ -296,6 +303,11 @@ function doGet(e) {
         status: "success",
         data: getEvents(timeOption)
       });
+    }
+
+    if (type === "vine") {
+      const v = e.parameter.v_id || e.parameter.v;
+      return jsonResponse({ status: "success", data: getMembersByVine(v, timeOption) });
     }
 
     return jsonResponse({

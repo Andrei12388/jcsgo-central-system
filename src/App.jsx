@@ -8,6 +8,7 @@ import "react-toastify/dist/ReactToastify.css";
 import Calendar from "./components/calendar";
 import { useNotification } from "./components/notificationToast";
 import StatsBarGraph from "./components/StatsBarGraph";
+import VineAttendance from "./components/VineAttendance";
 
 function App() {
   const { notify } = useNotification();
@@ -22,6 +23,7 @@ const [pdfCellPadding, setPdfCellPadding] = useState(1);
 const [actionLoading, setActionLoading] = useState(false);
 
 const [showCalendar, setShowCalendar] = useState(false);
+const [showVinePage, setShowVinePage] = useState(false);
 
   const [sortKey, setSortKey] = useState(null);
   const [sortDirection, setSortDirection] = useState("asc");
@@ -74,13 +76,16 @@ const MINISTRY_OPTIONS = ["Music", "Dance", "Program", "MultiMedia"];
 
   const WEB_APP_URL =
     "https://script.google.com/macros/s/AKfycbxOGv2Dz4LF8g2HodyKYvtE7lJ_6tkIPZKVEL4QUYfNhYk7GwucSUTKuANHooKwtyrO/exec";
+  // External vine spreadsheet API (separate spreadsheet)
+  const VINE_API_URL =
+    "https://script.google.com/macros/s/AKfycbzGiOHIjWW0kWQkhjipbMe5Tlc31rhGKPvscMe0X6qPF5RQqdeVlRRyytVARkIeQDbE/exec";
 
   const tableRef = useRef(null);
   const statsRef = useRef(null);
 
-  // =========================
+ 
   // API CALL
-  // =========================
+ 
   const callAPI = async (payload) => {
     if (selectedCelebration && payload.action !== "landingSelection") {
       payload.time = selectedCelebration;
@@ -148,9 +153,9 @@ const MINISTRY_OPTIONS = ["Music", "Dance", "Program", "MultiMedia"];
   });
 };
 
-  // =========================
+ 
   // FETCH DATA
-  // =========================
+ 
   const fetchData = () => {
     setLoading(true);
 
@@ -189,17 +194,17 @@ const MINISTRY_OPTIONS = ["Music", "Dance", "Program", "MultiMedia"];
   localStorage.setItem("theme", theme);
 }, [theme]);
 
-  // =========================
+ 
   // HEADERS
-  // =========================
+ 
   const headers =
     data.length > 0
       ? Object.keys(data[0]).filter((k) => k !== "_rowIndex")
       : [];
 
-      // =========================
+     
 // BIRTHDAY THIS WEEK
-// =========================
+
 const birthdayKey = headers.find(
   (h) =>
     h.toLowerCase().includes("b. date") ||
@@ -247,9 +252,9 @@ const getUpcomingBirthdays = () => {
 
 const upcomingBirthdays = getUpcomingBirthdays();
 
-  // =========================
+ 
   // FORM HANDLERS
-  // =========================
+ 
   const handleChange = (key, value) => {
     setForm((prev) => ({
       ...prev,
@@ -301,9 +306,9 @@ const resetForm = () => {
   setShowForm(false);
 };
 
-  // =========================
+ 
   // ADD
-  // =========================
+ 
  const handleAdd = async () => {
   setActionLoading(true);
 
@@ -323,9 +328,9 @@ const resetForm = () => {
   }
 };
 
-  // =========================
+ 
   // EDIT START
-  // =========================
+ 
 const startEdit = (row) => {
   const formattedRow = { ...row };
 
@@ -347,9 +352,9 @@ const startEdit = (row) => {
   setShowForm(true);
 };
 
-  // =========================
+ 
   // SAVE EDIT
-  // =========================
+ 
  const handleEdit = async () => {
   setActionLoading(true);
 
@@ -378,9 +383,9 @@ const getCurrentDate = () => {
   });
 };
 
-  // =========================
+ 
   // DELETE
-  // =========================
+ 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this member?")) return;
     setActionLoading(true);
@@ -400,9 +405,9 @@ const getCurrentDate = () => {
     }
   };
 
-  // =========================
+ 
   // SORT
-  // =========================
+ 
   const handleSort = (key) => {
     if (sortKey === key) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -439,9 +444,9 @@ const sortedData = [...filteredData].sort((a, b) => {
       : String(valB).localeCompare(String(valA));
   });
 
-  // =========================
+ 
   // PAGINATION
-  // =========================
+ 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = sortedData.slice(
     startIndex,
@@ -464,18 +469,18 @@ const sortedData = [...filteredData].sort((a, b) => {
   // create pdf
   const pdf = new jsPDF("p", "mm", "a4");
 
-  // =========================
+ 
   // IMAGE SIZE
-  // =========================
+ 
   const pdfWidth =
     pdf.internal.pageSize.getWidth();
 
   const pdfHeight =
     (canvas.height * pdfWidth) / canvas.width;
 
-  // =========================
+ 
   // ADD DASHBOARD IMAGE
-  // =========================
+ 
   pdf.addImage(
     imgData,
     "PNG",
@@ -485,9 +490,9 @@ const sortedData = [...filteredData].sort((a, b) => {
     pdfHeight
   );
 
-  // =========================
+ 
   // PREVIEW AS BLOB
-  // =========================
+ 
   const pdfBlob = pdf.output("blob");
 
   const url = URL.createObjectURL(pdfBlob);
@@ -495,9 +500,9 @@ const sortedData = [...filteredData].sort((a, b) => {
   window.open(url);
 };
 
-  // =========================
+ 
   // PDF
-  // =========================
+ 
 const generatePdfPreview = () => {
   const doc = new jsPDF("l", "mm", "a4");
 
@@ -1617,7 +1622,7 @@ const getSelectOptions = (key) => {
 
   
       
-{/* ================= BIRTHDAY NOTIFICATION ================= */}
+{/*  BIRTHDAY NOTIFICATION  */}
 {upcomingBirthdays.length > 0 && (
  <div
   style={{
@@ -1691,8 +1696,18 @@ const getSelectOptions = (key) => {
       border: "1px solid #ccc",
     }}
   />
+  <button
+    onClick={() => setShowVinePage((s) => !s)}
+    style={{ marginLeft: 12, padding: "10px 20px", cursor: "pointer" }}
+  >
+    {showVinePage ? "Hide Vine Attendance" : "Vine Attendance"}
+  </button>
 
-  {/* ================= PAGINATION ================= */}
+  {showVinePage && (
+    <VineAttendance webAppUrl={VINE_API_URL} time={selectedCelebration} />
+  )}
+
+  {/*  PAGINATION  */}
       <div style={{ marginBottom: 10 }}>
         <button
           onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
@@ -1814,7 +1829,7 @@ const getSelectOptions = (key) => {
         </tbody>
       </table>
 
-      {/* ================= PAGINATION ================= */}
+      {/*  PAGINATION  */}
       <div style={{ marginTop: 10 }}>
         <button
           onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
