@@ -102,63 +102,44 @@ const getDiff = (id, updates) => {
   };
 }, [webAppUrl, time, selectedMonth]);
 
-  const fetchByVine = async (vineId) => {
-    setLoading(true);
-
-    try {
-      const url =
-        `${webAppUrl}?action=getByVine&v_id=${encodeURIComponent(vineId)}${
-          time ? `&time=${encodeURIComponent(time)}` : ""
-        }&month=${encodeURIComponent(selectedMonth)}`;
-
-      const res = await fetch(url);
-      const json = await res.json();
-      const rows = json.data || [];
-
-      if (!rows.length) {
-        setMembers([]);
-        setWeekColumns([]);
-        
-        return;
-      }
-
-      const rawKeys = Object.keys(rows[0]);
-
-      const weekCols = rawKeys.filter((k) =>
-        /^WEEK/i.test(k.replace(/\s+/g, ""))
-      );
-
-     setWeekColumns(weekCols);
-setMembers(rows);
-
-// ✅ FIX: initialize original snapshot HERE
-const originalMap = {};
-rows.forEach((r) => {
-  originalMap[r.id] = { ...r };
-});
-
-setOriginalData(originalMap);
-setDirtyRows({});
-setEditBuffer({});
-    } catch (err) {
-      console.error(err);
-      setMembers([]);
-      setWeekColumns([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSelect = (e) => {
     const id = e.target.value;
     setSelectedVine(id);
+  };
 
-    if (id) fetchByVine(id);
-    else {
+  useEffect(() => {
+    if (!selectedVine) {
       setMembers([]);
       setWeekColumns([]);
+      setOriginalData({});
+      setDirtyRows({});
+      setEditBuffer({});
+      return;
     }
-  };
+
+    const rows = allData.filter((r) => String(r.v_id || "").trim() === String(selectedVine).trim());
+
+    if (!rows.length) {
+      setMembers([]);
+      setWeekColumns([]);
+      return;
+    }
+
+    const rawKeys = Object.keys(rows[0]);
+    const weekCols = rawKeys.filter((k) => /^WEEK/i.test(k.replace(/\s+/g, "")));
+
+    setWeekColumns(weekCols);
+    setMembers(rows);
+
+    const originalMap = {};
+    rows.forEach((r) => {
+      originalMap[r.id] = { ...r };
+    });
+
+    setOriginalData(originalMap);
+    setDirtyRows({});
+    setEditBuffer({});
+  }, [selectedVine, allData]);
 
   const isChecked = (val) =>
     val === true ||
@@ -226,7 +207,8 @@ const updateBuffer = (memberId, field, value) => {
       })
     });
 
-    await fetchByVine(selectedVine);
+    const refreshed = await fetchAll();
+    setAllData(refreshed);
     setEditBuffer({});
     setDirtyRows({});
   } catch (err) {
@@ -254,7 +236,8 @@ const updateBuffer = (memberId, field, value) => {
         })
       });
 
-      await fetchByVine(selectedVine);
+      const refreshed = await fetchAll();
+      setAllData(refreshed);
       setSavedFlash(true);
       setTimeout(() => setSavedFlash(false), 1500);
     } catch (err) {
@@ -288,7 +271,8 @@ const updateBuffer = (memberId, field, value) => {
       });
 
       setNewMemberForm({ first_name: "", last_name: "", v_id: "" });
-      await fetchByVine(selectedVine);
+      const refreshed = await fetchAll();
+      setAllData(refreshed);
       setSavedFlash(true);
       setTimeout(() => setSavedFlash(false), 1500);
     } catch (err) {
