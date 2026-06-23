@@ -1,0 +1,208 @@
+input {
+  border-radius: 6px;
+  
+}
+
+input:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+button {
+  padding: 8px 14px;
+  margin-top: 5px;
+  cursor: pointer;
+}
+
+/* =========================
+   VINE ATTENDANCE LAYOUT
+========================= */
+
+.vine-attendance__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  background: var(--bg);
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.vine-attendance__header img {
+  max-width: 100%;
+  height: auto;
+}
+
+.vine-attendance__month-buttons,
+.vine-attendance__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vine-attendance__month-buttons button,
+.vine-attendance__controls > * {
+  min-width: 0;
+}
+
+/* =========================
+   TABLE WRAPPER
+========================= */
+
+.vine-attendance__table-wrap {
+  overflow-x: auto;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+  color: var(--text);
+ background: var(--card);
+  border-radius: 8px;
+}
+
+/* =========================
+   TABLE
+========================= */
+
+.vine-attendance__table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--text);
+  background: var(--card);
+}
+
+/* =========================
+   TABLE CELLS
+========================= */
+
+.vine-attendance__table th,
+.vine-attendance__table td {
+ background: var(--card);
+  padding: 10px;
+  text-align: left;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  
+}
+
+/* =========================
+   STICKY HEADER
+========================= */
+
+.vine-attendance__table thead th {
+  position: sticky;
+  top: 0;
+   color: var(--text);
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  z-index: 5;
+}
+
+/* =========================
+   STICKY FIRST COLUMN
+========================= */
+
+.vine-attendance__table th:nth-child(1),
+.vine-attendance__table td:nth-child(1) {
+  position: sticky;
+  left: 0;
+   color: var(--text) !important;;
+  border-bottom: 1px solid var(--border) !important;
+    background: var(--card) !important;
+    z-index: 4 !important;
+  min-width: 50px;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+}
+
+/* =========================
+   STICKY SECOND COLUMN
+========================= */
+
+.vine-attendance__table th:nth-child(2),
+.vine-attendance__table td:nth-child(2) {
+  position: sticky;
+  left: 35px; /* same as first column width */
+  min-width: 50px;
+  
+  background: var(--card);
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+}
+
+
+/* =========================
+   TOP LEFT HEADER PRIORITY
+========================= */
+
+.vine-attendance__table thead th:nth-child(1),
+.vine-attendance__table thead th:nth-child(2) {
+  z-index: 6;
+  background: var(--card);
+}
+
+
+/* =========================
+   FLASH MESSAGE
+========================= */
+
+.vine-attendance__flash {
+  color: #10b981;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+/* =========================
+   MOBILE RESPONSIVE
+========================= */
+
+@media (max-width: 860px) {
+  .vine-attendance__header {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .vine-attendance__month-buttons,
+  .vine-attendance__controls {
+    flex-direction: column;
+  }
+
+  .vine-attendance__month-buttons button,
+  .vine-attendance__controls select,
+  .vine-attendance__controls button {
+    width: 100%;
+  }
+
+  .vine-attendance__table-wrap {
+    overflow-x: auto;
+  }
+
+  .vine-attendance__table {
+    min-width: 900px;
+  }
+
+  .vine-attendance__table th,
+  .vine-attendance__table td {
+    padding: 8px;
+    font-size: 14px;
+  }
+
+  /* Disable sticky on mobile */
+  .vine-attendance__table thead th,
+  .vine-attendance__table th:nth-child(2),
+  .vine-attendance__table td:nth-child(2) {
+    position: static;
+    left: auto;
+    top: auto;
+    box-shadow: none;
+  }
+
+}
+

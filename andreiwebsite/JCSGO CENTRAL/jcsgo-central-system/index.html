@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logonotitle.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JCSGO-Central-System</title>
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('theme');
+          if (theme === 'dark' || theme === 'light') {
+            document.documentElement.className = theme;
+          } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.className = 'dark';
+          } else {
+            document.documentElement.className = 'light';
+          }
+          document.addEventListener('DOMContentLoaded', function() {
+            try { document.body.className = document.documentElement.className; } catch (e) {}
+          });
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

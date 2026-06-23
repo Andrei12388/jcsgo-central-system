@@ -1,0 +1,382 @@
+import { useEffect, useState, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { useNotification } from "../components/notificationToast";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
+
+const WEB_APP_URL =
+  "https://script.google.com/macros/s/AKfycbxOGv2Dz4LF8g2HodyKYvtE7lJ_6tkIPZKVEL4QUYfNhYk7GwucSUTKuANHooKwtyrO/exec";
+
+export default function CalendarPage() {
+  const { notify } = useNotification();
+  const [searchParams] = useSearchParams();
+  const selectedTime = searchParams.get("time") || "";
+
+  const [events, setEvents] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const calendarRef = useRef(null);
+  const [loading, setLoading] = useState(true)
+
+  const [processing, setProcessing] = useState(false);
+
+  const [showAdd, setShowAdd] = useState(false);
+  const [isEditingEvent, setIsEditingEvent] = useState(false);
+
+  const [viewEvent, setViewEvent] = useState(null);
+
+  const [selectedEventData, setSelectedEventData] = useState(null);
+
+  const [newEvent, setNewEvent] = useState({
+    DATE: "",
+    DESCRIPTION: "",
+    DETAILS: "",
+    LOCATION: "",
+    COLOR: "#4da6ff",
+  });
+
+  const formatDate = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (isNaN(date)) return value;
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+ const fetchEvents = () => {
+  setLoading(true);
+
+  const timeParam = selectedTime
+    ? `&time=${encodeURIComponent(selectedTime)}`
+    : "";
+
+  fetch(`${WEB_APP_URL}?type=events${timeParam}`)
+    .then((res) => res.json())
+    .then((res) => {
+      const mapped = (res.data || []).map((ev) => ({
+        id: ev.id,
+        title: ev.DESCRIPTION,
+        date: ev.DATE,
+        color: ev.COLOR || "#4da6ff",
+        extendedProps: {
+          location: ev.LOCATION,
+          description: ev.DESCRIPTION,
+          details: ev.DETAILS,
+          color: ev.COLOR,
+        },
+      }));
+
+      setEvents(mapped);
+    })
+    .catch((error) => {
+      console.error("Failed to fetch events:", error);
+      setEvents([]); 
+    })
+    .finally(() => {
+      setLoading(false);
+    });
+};
+
+  useEffect(() => {
+    fetchEvents();
+  }, [selectedTime]);
+
+  const saveEvent = async () => {
+    setProcessing(true);
+    try {
+      const res = await fetch(WEB_APP_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "addEvent", data: newEvent, time: selectedTime }),
+      });
+      const result = await res.json();
+      if (result.status === "success") {
+        notify.success("Event added!");
+        setNewEvent({ DATE: "", DESCRIPTION: "", DETAILS: "", LOCATION: "", COLOR: "#4da6ff" });
+        setShowAdd(false);
+        fetchEvents();
+      } else {
+        notify.error(result.message);
+      }
+    } catch (err) {
+      notify.error("Something went wrong");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const exportMonthPDF = () => {
+    const calendarApi = calendarRef.current.getApi();
+    const view = calendarApi.view;
+    const start = new Date(view.currentStart);
+    const end = new Date(view.currentEnd);
+    const monthEvents = events.filter((ev) => {
+      const d = new Date(ev.date);
+      return d >= start && d < end;
+    });
+   const doc = new jsPDF("l", "mm", "a4");
+
+// ======================
+// PAGE 1 - CALENDAR
+// ======================
+doc.setFontSize(14);
+doc.text(`Calendar View - ${view.title}`, 10, 10);
+
+const year = start.getFullYear();
+const month = start.getMonth();
+const firstDay = new Date(year, month, 1);
+const lastDay = new Date(year, month + 1, 0);
+
+const startDay = firstDay.getDay();
+const daysInMonth = lastDay.getDate();
+
+const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+let day = 1;
+let row = [];
+const grid = [];
+
+for (let i = 0; i < startDay; i++) row.push("");
+
+while (day <= daysInMonth) {
+  row.push(day);
+
+  if (row.length === 7) {
+    grid.push(row);
+    row = [];
+  }
+
+  day++;
+}
+
+while (row.length > 0 && row.length < 7) row.push("");
+if (row.length) grid.push(row);
+
+autoTable(doc, {
+  head: [weekDays],
+  body: grid,
+  startY: 20,
+  styles: {
+    fontSize: 10,
+    minCellHeight: 24,
+    valign: "top",
+    overflow: "linebreak",
+    cellPadding: 2,
+  },
+  didParseCell(data) {
+    if (data.section !== "body") return;
+
+    const cellDay = data.cell.raw;
+    if (!cellDay) return;
+
+    const cellDate = new Date(year, month, cellDay);
+
+    const dayEvents = monthEvents.filter((ev) => {
+      const evDate = new Date(ev.date);
+      return (
+        evDate.getFullYear() === cellDate.getFullYear() &&
+        evDate.getMonth() === cellDate.getMonth() &&
+        evDate.getDate() === cellDate.getDate()
+      );
+    });
+
+    if (dayEvents.length === 1)
+      data.cell.styles.fillColor = [220, 255, 220];
+    else if (dayEvents.length > 1)
+      data.cell.styles.fillColor = [255, 220, 220];
+
+    if (dayEvents.length > 0) {
+      const titles = dayEvents
+        .map((e) => `• ${e.title}`)
+        .slice(0, 6)
+        .join("\n");
+
+      data.cell.text = [String(cellDay), ...titles.split("\n")];
+    } else {
+      data.cell.text = [String(cellDay)];
+    }
+  },
+  didDrawCell(data) {
+    if (data.section !== "body") return;
+
+    const cellDay = data.cell.raw;
+    if (!cellDay) return;
+
+    const cellDate = new Date(year, month, cellDay);
+
+    const dayEvents = monthEvents.filter((ev) => {
+      const evDate = new Date(ev.date);
+      return (
+        evDate.getFullYear() === cellDate.getFullYear() &&
+        evDate.getMonth() === cellDate.getMonth() &&
+        evDate.getDate() === cellDate.getDate()
+      );
+    });
+
+    if (dayEvents.length > 0) {
+      const x = data.cell.x + data.cell.width - 4;
+      const y = data.cell.y + 4;
+
+      doc.setFillColor(0, 123, 255);
+      doc.circle(x, y, 1.2, "F");
+    }
+  },
+});
+
+// ======================
+// PAGE 2 - EVENT LIST
+// ======================
+doc.addPage();
+
+doc.setFontSize(14);
+doc.text(`Events - ${view.title}`, 10, 10);
+
+const sortedEvents = [...monthEvents].sort(
+  (a, b) => new Date(a.date) - new Date(b.date)
+);
+
+const tableData = sortedEvents.map((ev) => [
+  formatDate(ev.date),
+  ev.title,
+  ev.extendedProps?.details || "",
+  ev.extendedProps?.location || "",
+]);
+
+autoTable(doc, {
+  head: [["Date", "Event", "Details", "Location"]],
+  body: tableData,
+  startY: 20,
+});
+    const pdfBlob = doc.output("blob");
+    const url = URL.createObjectURL(pdfBlob);
+    window.open(url);
+  };
+
+  const updateEvent = async () => {
+    setProcessing(true);
+    try {
+      const res = await fetch(WEB_APP_URL, { method: "POST", body: JSON.stringify({ action: "editEvent", id: selectedEventData.id, data: selectedEventData, time: selectedTime }) });
+      const result = await res.json();
+      if (result.status === "success") {
+        notify.success("Event updated!");
+        setIsEditingEvent(false);
+        setSelectedEventData(null);
+        fetchEvents();
+      } else notify.error(result.message);
+    } catch (err) {
+      notify.error("Update failed");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const deleteEvent = async () => {
+    if (!window.confirm("Delete this event?")) return;
+    setProcessing(true);
+    try {
+      const res = await fetch(WEB_APP_URL, { method: "POST", body: JSON.stringify({ action: "deleteEvent", id: selectedEventData.id, time: selectedTime }) });
+      const result = await res.json();
+      if (result.status === "success") {
+        notify.success("Event deleted!");
+        setIsEditingEvent(false);
+        setSelectedEventData(null);
+        fetchEvents();
+      } else notify.error(result.message);
+    } catch (err) {
+      notify.error("Delete failed");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <div className="calendar-container" style={{ width: "1200px", margin: "0 auto", padding: 20, display: "flex", flexDirection: "column", gap: 20, overflowX: "scroll" }}>
+         {loading && (
+        <LoadingSpinner title="Loading Events" />
+      )}
+      {processing && (
+        <div className="loading-overlay">
+          <div className="spinner" />
+          <p>Processing...</p>
+        </div>
+      )}
+
+      <button onClick={exportMonthPDF}>Export This Month PDF</button>
+
+      <FullCalendar ref={calendarRef} plugins={[dayGridPlugin, interactionPlugin]} initialView="dayGridMonth" events={events} displayEventTime={false} eventClick={(info) => {
+        setViewEvent(info.event);
+        setSelectedEventData({ id: info.event.id, DATE: info.event.startStr, DESCRIPTION: info.event.title, DETAILS: info.event.extendedProps.details, LOCATION: info.event.extendedProps.location, COLOR: info.event.backgroundColor });
+        setIsEditingEvent(false);
+      }} dateClick={(info) => { setNewEvent((prev) => ({ ...prev, DATE: info.dateStr })); setShowAdd(true); }} />
+
+      {viewEvent && !isEditingEvent && (
+        <div style={{ position: "fixed", top: 0, left: 0, zIndex: 1000, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <div className="animationCard" style={{ background: "var(--card)", color: "var(--text)", padding: 20, borderRadius: 10, width: 400, border: "1px solid var(--border)" }}>
+            <h3 style={{ color: "var(--text-h)" }}>{viewEvent.title}</h3>
+            <p><b>Date:</b> {formatDate(viewEvent.startStr)}</p>
+            <b style={{ color: "var(--text-h)", display: "block", marginBottom: 6 }}>Details</b>
+            <div style={{ marginTop: 12, padding: 12, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8 }}>
+              <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.6, color: "var(--text)", fontSize: 14 }}>{viewEvent.extendedProps.details || "No details provided"}</div>
+            </div>
+            <p><b>Location:</b> {viewEvent.extendedProps.location}</p>
+            <div style={{ marginTop: 10 }}>
+              <button style={{ marginLeft: 0 }} onClick={() => { setIsEditingEvent(true); setViewEvent(null); }}>Edit Event</button>
+              <button onClick={() => setViewEvent(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAdd && (
+        <div style={{ position: "fixed", top: 0, left: 0, zIndex: 1000, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <div className="animationCard" style={{ background: "var(--card)", display: "flex", flexDirection: "column", gap: 10, padding: 30, borderRadius: 10, width: 400, maxHeight: '90vh', overflow: 'auto', color: "var(--text)" }}>
+            <h3><strong>Add Event</strong></h3>
+            <label>Date:</label>
+            <input type="date" value={newEvent.DATE} onChange={(e) => setNewEvent({ ...newEvent, DATE: e.target.value })} />
+            <label>Event Name:</label>
+            <input placeholder="Event Name" value={newEvent.DESCRIPTION} onChange={(e) => setNewEvent({ ...newEvent, DESCRIPTION: e.target.value })} />
+            <label>Details:</label>
+            <textarea placeholder="Details" value={newEvent.DETAILS} onChange={(e) => setNewEvent({ ...newEvent, DETAILS: e.target.value })} />
+            <label>Location:</label>
+            <input placeholder="Location" value={newEvent.LOCATION} onChange={(e) => setNewEvent({ ...newEvent, LOCATION: e.target.value })} />
+            <label>Color:</label>
+            <input type="color" value={newEvent.COLOR} onChange={(e) => setNewEvent({ ...newEvent, COLOR: e.target.value })} />
+            <div style={{ marginTop: 10 }}>
+              <button onClick={saveEvent}>Save</button>
+              <button onClick={() => setShowAdd(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isEditingEvent && selectedEventData && (
+        <div style={{ position: "fixed", top: 0, left: 0, zIndex: 1000, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <div style={{ background: "var(--card)", display: "flex", flexDirection: "column", gap: 10, padding: 50, borderRadius: 10, width: 400, maxHeight: '90vh', overflow: 'auto', color: "var(--text)" }}>
+            <h3><strong>Edit Event</strong></h3>
+            <label>Date:</label>
+            <input type="date" value={selectedEventData.DATE} onChange={(e) => setSelectedEventData({ ...selectedEventData, DATE: e.target.value })} />
+            <label>Event Name:</label>
+            <input value={selectedEventData.DESCRIPTION} onChange={(e) => setSelectedEventData({ ...selectedEventData, DESCRIPTION: e.target.value })} />
+            <label>Details:</label>
+            <textarea value={selectedEventData.DETAILS || ""} onChange={(e) => setSelectedEventData({ ...selectedEventData, DETAILS: e.target.value })} />
+            <label>Location:</label>
+            <input value={selectedEventData.LOCATION} onChange={(e) => setSelectedEventData({ ...selectedEventData, LOCATION: e.target.value })} />
+            <label>Color:</label>
+            <input type="color" value={selectedEventData.COLOR || "#4da6ff"} onChange={(e) => setSelectedEventData({ ...selectedEventData, COLOR: e.target.value })} />
+            <div style={{ marginTop: 10 }}>
+              <button onClick={updateEvent}>Save</button>
+              <button onClick={deleteEvent} style={{ marginLeft: 10 }}>Delete</button>
+              <button onClick={() => setIsEditingEvent(false)} style={{ marginLeft: 10 }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
