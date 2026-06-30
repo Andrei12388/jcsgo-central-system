@@ -344,9 +344,19 @@ const getDiff = (id, updates) => {
   vine => vine.id === String(selectedVine)
 );
 
+const formatDate = (date) => {
+  if (!date) return "";
+
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
 
 const handleAdd = async () => {
-  setLoading(true)
+  setSaving(true)
   try {
    const dataToSend = {
   ...form,
@@ -365,7 +375,7 @@ const res = await fetch(webAppUrl, {
 
     if (result.status === "success") {
       notify.success("Member added successfully!");
-
+     
       setForm({
         last_name: "",
         first_name: "",
@@ -380,15 +390,17 @@ const res = await fetch(webAppUrl, {
         ministry: "",
         cg_leader: selectedVineData?.name || "None",
       });
-      setLoading(false)
+      setSaving(false)
       setShowForm(false);
     } else {
-      setLoading(false)
+      setSaving(false)
       notify.error(result.message);
     }
   } catch (err) {
-    setLoading(false)
+    setSaving(false)
     notify.error(err.message);
+  } finally {
+     await fetchData();
   }
 };
 
@@ -796,6 +808,7 @@ console.log(vines)
 >
   <thead>
     <tr>
+      <th>#</th>
       <th>Last Name</th>
       <th>First Name</th>
       <th>Contact</th>
@@ -808,7 +821,7 @@ console.log(vines)
       <th>Wedding Anniversary</th>
       <th>Ministry</th>
       <th>CG Leader</th>
-      <th>Action</th>
+     
     </tr>
   </thead>
 
@@ -822,33 +835,20 @@ console.log(vines)
       })
       .map((m) => (
         <tr key={m.id}>
+          <td>{m.id}</td>
           <td>{m.last_name}</td>
           <td>{m.first_name}</td>
           <td>{m.contac}</td>
-          <td>{m.bday}</td>
+           <td>{formatDate(m.bday)}</td>
           <td>{m.address}</td>
           <td>{m.status}</td>
           <td>{m.celebration}</td>
           <td>{m.category}</td>
           <td>{m.marital_status}</td>
-          <td>{m.wedding_anniv}</td>
+<td>{formatDate(m.wedding_anniv)}</td>
           <td>{m.ministry}</td>
           <td>{m.cg_leader}</td>
 
-          <td>
-            <button
-              onClick={() => {
-                setForm({
-                  ...m,
-                  cg_leader: selectedVineData?.name || "",
-                });
-
-                setShowQueryModal(false);
-              }}
-            >
-              Select
-            </button>
-          </td>
         </tr>
       ))}
   </tbody>
@@ -1107,8 +1107,8 @@ console.log(vines)
         marginTop: 20,
       }}
     >
-      <button onClick={handleAdd} disabled={actionLoading}>
-        {actionLoading ? "Adding..." : "Add Member"}
+      <button onClick={handleAdd} disabled={saving}>
+        {saving ? "Adding..." : "Add Member"}
       </button>
 
       <button onClick={resetForm}>
