@@ -17,6 +17,7 @@ const MONTHS = [
   "DECEMBER"
 ];
 
+
 function getSheet(month) {
   const sheetName = month && MONTHS.includes(String(month).trim().toUpperCase())
     ? String(month).trim().toUpperCase()
@@ -128,9 +129,13 @@ function getMembersByVine(v_id, month) {
 /**
  * ADD MEMBER
  */
-function addMember(data, month) {
+function addMember(data) {
 
-  const sheet = getSheet(month);
+  // Always add to MASTERLIST
+  const sheet = SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getSheetByName("MASTERLIST");
+
   const headers = getHeaders(sheet);
 
   const idValues = sheet
@@ -153,6 +158,7 @@ function addMember(data, month) {
     }
 
     return data[header] ?? "";
+
   });
 
   sheet.appendRow(row);
@@ -166,17 +172,20 @@ function addMember(data, month) {
 /**
  * EDIT MEMBER
  */
-function editMember(id, data, month) {
+function editMember(id, data) {
 
-  const sheet = getSheet(month);
+  const sheet = SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getSheetByName("MASTERLIST");
+
   const values = sheet.getDataRange().getValues();
-
   const headers = getHeaders(sheet);
 
-  for (let i = 2; i < values.length; i++) { 
-    // i = 2 because row 1 header, row 2 header row, row 3 data start
+  for (let i = 2; i < values.length; i++) {
 
     if (String(values[i][0]) === String(id)) {
+
+      const row = values[i];
 
       headers.forEach((header, colIndex) => {
 
@@ -184,17 +193,16 @@ function editMember(id, data, month) {
 
         if (data[header] !== undefined) {
 
-          let value = data[header];
-
-          if (isCheckbox(header)) {
-            value = Boolean(value);
-          }
-
-          sheet
-            .getRange(i + 1, colIndex + 1)
-            .setValue(value);
+          row[colIndex] = isCheckbox(header)
+            ? Boolean(data[header])
+            : data[header];
         }
+
       });
+
+      sheet
+        .getRange(i + 1, 1, 1, row.length)
+        .setValues([row]);
 
       return {
         status: "success",
@@ -212,51 +220,130 @@ function editMember(id, data, month) {
 /**
  * DELETE MEMBER
  */
-function deleteMember(id, month) {
+function deleteMember(id) {
 
-  const sheet = getSheet(month);
-  const values = sheet.getDataRange().getValues();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  for (let i = 2; i < values.length; i++) {
+  // Delete from every monthly sheet
+  MONTHS.forEach(month => {
 
-    if (String(values[i][0]) === String(id)) {
+    const sheet = ss.getSheetByName(month);
+    if (!sheet) return;
 
-      sheet.deleteRow(i + 1);
+    const values = sheet.getDataRange().getValues();
+
+    // Search from bottom to top
+    for (let i = values.length - 1; i >= 2; i--) {
+
+      if (String(values[i][0]) === String(id)) {
+        sheet.deleteRow(i + 1);
+        break;
+      }
+
+    }
+
+  });
+
+  // Delete from MASTERLIST
+  const masterSheet = ss.getSheetByName("MASTERLIST");
+  const masterValues = masterSheet.getDataRange().getValues();
+
+  for (let i = masterValues.length - 1; i >= 2; i--) {
+
+    if (String(masterValues[i][0]) === String(id)) {
+
+      masterSheet.deleteRow(i + 1);
 
       return {
-        status: "success"
+        status: "success",
+        message: "Member deleted successfully."
       };
+
     }
+
   }
 
   return {
     status: "error",
-    message: "Member not found"
+    message: "Member not found."
   };
 }
 
 function batchEdit(updates, month) {
-  const sheet = getSheet(month);
-  const values = sheet.getDataRange().getValues();
-  const headers = values[1]; // row 2 headers
 
-  for (let i = 2; i < values.length; i++) {
-    const rowId = values[i][0];
+  const monthSheet = getSheet(month);
 
-    if (updates[rowId]) {
-      const data = updates[rowId];
+  const masterSheet = SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getSheetByName("MASTERLIST");
 
-      headers.forEach((h, colIndex) => {
-        if (h === "id") return;
+  const monthValues = monthSheet.getDataRange().getValues();
+  const monthHeaders = monthValues[1];
 
-        if (data[h] !== undefined) {
-          sheet.getRange(i + 1, colIndex + 1).setValue(data[h]);
-        }
-      });
+  const masterValues = masterSheet.getDataRange().getValues();
+  const masterHeaders = masterValues[1];
+
+  for (const rowId in updates) {
+
+    const data = updates[rowId];
+
+    // -----------------------
+    // Update Monthly Sheet
+    // -----------------------
+    for (let i = 2; i < monthValues.length; i++) {
+
+      if (String(monthValues[i][0]) === String(rowId)) {
+
+        monthHeaders.forEach((header, col) => {
+
+          // Skip names
+          if (header === "first_name" || header === "last_name")
+            return;
+
+          if (data[header] !== undefined) {
+            monthSheet
+              .getRange(i + 1, col + 1)
+              .setValue(data[header]);
+          }
+
+        });
+
+        break;
+      }
     }
+
+    // -----------------------
+    // Update MASTERLIST
+    // -----------------------
+    for (let i = 2; i < masterValues.length; i++) {
+
+      if (String(masterValues[i][0]) === String(rowId)) {
+
+        ["first_name", "last_name"].forEach(field => {
+
+          if (data[field] !== undefined) {
+
+            const col = masterHeaders.indexOf(field);
+
+            if (col !== -1) {
+              masterSheet
+                .getRange(i + 1, col + 1)
+                .setValue(data[field]);
+            }
+
+          }
+
+        });
+
+        break;
+      }
+    }
+
   }
 
-  return { status: "success" };
+  return {
+    status: "success"
+  };
 }
 
 /**
@@ -313,16 +400,16 @@ function doPost(e) {
     switch (body.action) {
 
       case "add":
-        return jsonResponse(addMember(body.data, body.month));
+        return jsonResponse(addMember(body.data));
 
       case "edit":
-        return jsonResponse(editMember(body.id, body.data, body.month));
+        return jsonResponse(editMember(body.id, body.data));
 
       case "batchEdit":
         return jsonResponse(batchEdit(body.updates, body.month));
 
       case "delete":
-        return jsonResponse(deleteMember(body.id, body.month));
+        return jsonResponse(deleteMember(body.id));
 
       default:
         return jsonResponse({

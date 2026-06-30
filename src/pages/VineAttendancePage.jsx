@@ -6,7 +6,7 @@ import VineAttendance from "../components/VineAttendance";
 export default function VineAttendancePage() {
   // replicate the VINE_API_URL used in App.jsx
   const VINE_API_URL =
-    "https://script.google.com/macros/s/AKfycbxkZ40P9S4fF-LtH5qoq6QHYZKzpsvKOdzptFjS2WGcoD_wknVEOBSsFouNHuB_cw9O/exec";
+    "https://script.google.com/macros/s/AKfycbxn3uf9T4svhT0QHlbM2dEZdC9JRAF2l32I4nnW4TDwNOUDuehHyCHUn634k_TwaDaY/exec";
 
   const { search } = useLocation();
   const params = new URLSearchParams(search);

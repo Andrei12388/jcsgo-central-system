@@ -268,32 +268,31 @@ const updateBuffer = (memberId, field, value) => {
 };
 
   const deleteMember = async (memberId, memberName) => {
-    if (!window.confirm(`Are you sure you want to delete ${memberName}?`)) {
-      return;
-    }
+  if (!window.confirm(`Are you sure you want to delete ${memberName}?`)) {
+    return;
+  }
 
-    setSaving(true);
-    try {
-      await fetch(webAppUrl, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "delete",
-          id: memberId,
-          month: selectedMonth
-        })
-      });
+  setSaving(true);
+  try {
+    await fetch(webAppUrl, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "delete",
+        id: memberId
+      })
+    });
 
-      const refreshed = await fetchAll();
-      setAllData(refreshed);
-      notify?.success("Member deleted successfully");
-    } catch (err) {
-      console.error(err);
-      notify?.error("Error deleting member");
-    } finally {
-      setSaving(false);
-      setShowDeleteConfirm(null);
-    }
-  };
+    const refreshed = await fetchAll();
+    setAllData(refreshed);
+    notify?.success("Member deleted successfully");
+  } catch (err) {
+    console.error(err);
+    notify?.error("Error deleting member");
+  } finally {
+    setSaving(false);
+    setShowDeleteConfirm(null);
+  }
+};
 
   const addMember = async () => {
     if (!newMemberForm.first_name.trim()) {
