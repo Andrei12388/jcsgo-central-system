@@ -17,6 +17,73 @@ const MONTHS = [
   "DECEMBER"
 ];
 
+function addMemberQuery(data) {
+  const sheet = SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getSheetByName("MEMBER_QUERY");
+
+  const lastRow = sheet.getLastRow();
+
+  let newId = 1;
+
+  // Data starts on row 2
+  if (lastRow >= 2) {
+    const lastId = Number(sheet.getRange(lastRow, 1).getValue()) || 0;
+    newId = lastId + 1;
+  }
+
+  sheet.appendRow([
+    newId,
+    data.last_name || "",
+    data.first_name || "",
+    data.contact || "",
+    data.bday || "",
+    data.address || "",
+    data.status || "",
+    data.celebration || "",
+    data.category || "",
+    data.marital_status || "",
+    data.wedding_anniv || "",
+    data.ministry || "",
+    data.cg_leader || ""
+  ]);
+
+  return {
+    status: "success",
+    id: newId
+  };
+}
+
+function getMembersQuery() {
+  const sheet = SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getSheetByName("MEMBER_QUERY");
+
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow < 2) {
+    return [];
+  }
+
+  const headers = sheet
+    .getRange(1, 1, 1, sheet.getLastColumn())
+    .getValues()[0];
+
+  const values = sheet
+    .getRange(2, 1, lastRow - 1, sheet.getLastColumn())
+    .getValues();
+
+  return values.map(row => {
+    let obj = {};
+
+    headers.forEach((header, i) => {
+      obj[header] = row[i];
+    });
+
+    return obj;
+  });
+}
+
 
 function getSheet(month) {
   const sheetName = month && MONTHS.includes(String(month).trim().toUpperCase())
@@ -362,6 +429,13 @@ function doGet(e) {
       });
     }
 
+    if (action === "getMembersQuery") {
+  return jsonResponse({
+    status: "success",
+    data: getMembersQuery()
+  });
+}
+
     if (action === "getByVine") {
       return jsonResponse(
         getMembersByVine(e.parameter.v_id, e.parameter.month)
@@ -401,6 +475,11 @@ function doPost(e) {
 
       case "add":
         return jsonResponse(addMember(body.data));
+
+      case "addQuery":
+         return jsonResponse(
+        addMemberQuery(body.data)
+      );
 
       case "edit":
         return jsonResponse(editMember(body.id, body.data));
