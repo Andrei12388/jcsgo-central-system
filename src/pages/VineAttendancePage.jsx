@@ -15,7 +15,33 @@ export default function VineAttendancePage() {
 
   return (
     <div style={{ padding: 16, width: "100%" }}>
-       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+       <div style={{ display: 'flex', flexDirection: "column", gap: 16 }}>
+        <div
+        style={{
+          
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'Center',
+          justifyContent: 'Center',
+          gap: 24,
+          padding: 20,
+          textAlign: 'center',
+         
+        }}
+      >
+        <img
+          src='logonotitle.png'
+          alt='Logo'
+          width={140}
+          height={70}
+          style={{ objectFit: 'contain' }}
+        />
+        <div>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 'bold' }}>Central Vine Attendance Form</h1>
+          
+        </div>
+      </div>
+      <div style={{display: "flex", flexDirection: 'row', justifyItems: 'center', alignItems: 'center'}}>
           <div style={{ padding: 20, borderRadius: 12, border: '1px solid var(--border)' }}>
             <h2 style={{ marginTop: 0 }}><strong>Attendance</strong></h2>
             <p style={{ margin: 0,  }}>
@@ -27,6 +53,7 @@ export default function VineAttendancePage() {
             <p style={{ margin: 0,  }}>
               Export attendance PDFs, and view attendance history weekly monthly and yearly.
             </p>
+            </div>
           </div>
         </div>
       <VineAttendance webAppUrl={VINE_API_URL} time={time} notify={notify} />

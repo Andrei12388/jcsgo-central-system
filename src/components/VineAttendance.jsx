@@ -526,7 +526,7 @@ const paginatedMembers = filteredMembers.slice(
           border: "2px solid var(--border)",
           borderRadius: 4,
         }}>
-          <h4 style={{ marginTop: 0 }}>Add New Member</h4>
+          <h4 style={{ marginTop: 0, marginBottom: 8, fontWeight: 'bold' }}>Add New Member on Attendance</h4>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flexDirection: "column" }}>
             <div style={{display: "flex", gap: 8, textWrap: "nowrap", justifyContent: "center", alignItems: "center"}}>
             <label>Vine Id:</label>
