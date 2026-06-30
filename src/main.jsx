@@ -25,6 +25,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/calendar" element={<CalendarPage />} />
             
           </Route>
+          <Route path="/vine-attendanceForm" element={<VineAttendancePage />} />
         </Routes>
       </Router>
     

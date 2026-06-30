@@ -308,7 +308,7 @@ const updateBuffer = (memberId, field, value) => {
           action: "add",
           month: selectedMonth,
           data: {
-            v_id: newMemberForm.v_id,
+            v_id: selectedVine,
             first_name: newMemberForm.first_name,
             last_name: newMemberForm.last_name
           }
@@ -527,14 +527,20 @@ const paginatedMembers = filteredMembers.slice(
           borderRadius: 4,
         }}>
           <h4 style={{ marginTop: 0 }}>Add New Member</h4>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flexDirection: "column" }}>
+            <div style={{display: "flex", gap: 8, textWrap: "nowrap", justifyContent: "center", alignItems: "center"}}>
+            <label>Vine Id:</label>
             <input
               type="text"
               placeholder="Vine ID"
-              value={newMemberForm.v_id}
+              value={selectedVine}
+              disabled
               onChange={(e) => setNewMemberForm({ ...newMemberForm, v_id: e.target.value })}
-              style={{ padding: "6px 8px", borderRadius: 4,}}
+              style={{ padding: "2px 4px", borderRadius: 4, backgroundColor: "var(--border)", color: "red"}}
             />
+            </div>
+            <div style={{display: "flex", gap: 8, textWrap: "nowrap", justifyContent: "center", alignItems: "center"}}>
+            <label>First Name:</label>
             <input
               type="text"
               placeholder="First Name"
@@ -542,6 +548,9 @@ const paginatedMembers = filteredMembers.slice(
               onChange={(e) => setNewMemberForm({ ...newMemberForm, first_name: e.target.value })}
               style={{ padding: "6px 8px", borderRadius: 4,}}
             />
+            </div>
+            <div style={{display: "flex", gap: 8, textWrap: "nowrap", justifyContent: "center", alignItems: "center"}}>
+            <label>Last Name:</label>
             <input
               type="text"
               placeholder="Last Name"
@@ -549,6 +558,7 @@ const paginatedMembers = filteredMembers.slice(
               onChange={(e) => setNewMemberForm({ ...newMemberForm, last_name: e.target.value })}
               style={{ padding: "6px 8px", borderRadius: 4,}}
             />
+            </div>
             <button
               onClick={addMember}
               disabled={saving}
