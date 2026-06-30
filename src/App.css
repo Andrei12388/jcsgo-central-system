@@ -196,10 +196,19 @@ button {
 
   /* Disable sticky on mobile */
   .vine-attendance__table thead th,
-  .vine-attendance__table th:nth-child(2),
-  .vine-attendance__table td:nth-child(2) {
+  .vine-attendance__table th:nth-child(1),
+  .vine-attendance__table td:nth-child(1) {
     position: static;
     left: auto;
+    top: auto;
+    box-shadow: none;
+  }
+
+  .vine-attendance__table thead th,
+  .vine-attendance__table th:nth-child(2),
+  .vine-attendance__table td:nth-child(2) {
+   
+    left: -5px;
     top: auto;
     box-shadow: none;
   }
