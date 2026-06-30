@@ -1,20 +1,44 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useNotification } from "../components/notificationToast";
 import VineAttendance from "../components/VineAttendance";
 
+const VINE_API_URL =
+    "https://script.google.com/macros/s/AKfycbxyuC7Vphb0rZxGj0xKPkqxj2kwt26-YPzruVtpxbBzpwVlv-ylxBv8nqf5tMc9hxL9/exec";
+
 export default function VineAttendancePage() {
-  // replicate the VINE_API_URL used in App.jsx
-  const VINE_API_URL =
-    "https://script.google.com/macros/s/AKfycbxn3uf9T4svhT0QHlbM2dEZdC9JRAF2l32I4nnW4TDwNOUDuehHyCHUn634k_TwaDaY/exec";
+
 
   const { search } = useLocation();
   const params = new URLSearchParams(search);
   const time = params.get("time") || "";
   const { notify } = useNotification();
 
+
+
+//get select options
+  const getSelectOptions = (key) => {
+    const k = key.trim().toLowerCase()
+    switch (k) {
+      case 'status':
+        return STATUS_OPTIONS
+      case 'celebration':
+        return []
+      case 'category':
+        return CATEGORY_OPTIONS
+      case 'marital_status':
+        return MARITAL_OPTIONS
+      case 'ministry':
+        return MINISTRY_OPTIONS
+      default:
+        return null
+    }
+  }
+
   return (
     <div style={{ padding: 16, width: "100%" }}>
+    
        <div style={{ display: 'flex', flexDirection: "column", gap: 16 }}>
         <div
         style={{
@@ -55,6 +79,8 @@ export default function VineAttendancePage() {
             </p>
             </div>
           </div>
+         
+
         </div>
       <VineAttendance webAppUrl={VINE_API_URL} time={time} notify={notify} />
     </div>

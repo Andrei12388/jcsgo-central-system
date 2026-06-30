@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import jsPDF from "jspdf";
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import autoTable from "jspdf-autotable";
+
 import { generateVineWeeklyReport } from "./report/weeklyReport";
 import { generateCentralMonthlyReport } from "./report/monthlyReport";
 import { generateVineYearlyReport } from "./report/yearlyReport";
 import { getSelectedWeekSunday } from "./report/weeklyReport";
 import LoadingSpinner from "./ui/LoadingSpinner";
-
 
 export default function VineAttendance({ webAppUrl, time, notify }) {
   const MONTHS = [
@@ -45,14 +46,152 @@ const powerfilledBaptismFields = [
   "WATER_BAPTISM"
 ];
 
+const STATUS_OPTIONS = [
+  '1st Timer',
+  '2nd Timer',
+  '3rd Timer',
+  '4th Timer',
+  'Regular/Active',
+]
 
+const CATEGORY_OPTIONS = ['Men', 'Women', 'Young Boys', 'Young Girls']
+const MARITAL_OPTIONS = ['Single', 'Married', 'Divorced', 'Widowed']
+const MINISTRY_OPTIONS = ['Music', 'Dance', 'Program', 'MultiMedia']
+
+// VineAttendance
+const [showForm, setShowForm] = useState(false)
+const [showQueryModal, setShowQueryModal] = useState(false);
+ const [members, setMembers] = useState([]);
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
+  const [actionLoading, setActionLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+const [form, setForm] = useState({
+  last_name: "",
+  first_name: "",
+  contac: "",
+  bday: "",
+  address: "",
+  status: "",
+  celebration: "",
+  category: "",
+  marital_status: "",
+  wedding_anniv: "",
+  ministry: "",
+  cg_leader: "",
+});
+  const [data, setData] = useState([])
+   const [membersQuery, setMembersQuery] = useState([]);
+  const [discipleSearch, setDiscipleSearch] = useState('')
+    const [leaderSearch, setLeaderSearch] = useState('')
+    const [searchParams] = useSearchParams()
+    const selectedCelebration = searchParams.get('time') || ''
+   const [isEditing, setIsEditing] = useState(false)
+    const [editId, setEditId] = useState(null)
+    const resetForm = () => {
+    setForm({})
+    setIsEditing(false)
+    setEditId(null)
+    setDiscipleSearch('')
+    setLeaderSearch('')
+    setShowForm(false)
+  }
+
+    const callAPI = async (payload) => {
+    if (selectedCelebration && payload.action !== 'landingSelection') {
+      payload.time = selectedCelebration
+    }
+
+    const res = await fetch(webAppUrl, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+
+    return res.json()
+  }
+
+   
+const fetchData = async () => {
+    setLoading(true)
+  try {
+    const response = await fetch(
+      `${webAppUrl}?action=getMembersQuery`
+    );
+
+    const result = await response.json();
+
+    if (result.status === "success") {
+      setMembersQuery(result.data);
+      setLoading(false)
+    } else {
+      setLoading(false)
+      notify.error(result.message);
+    }
+  } catch (err) {
+    setLoading(false)
+    notify.error(err.message);
+  }
+};
+  
+  
+
+const handleChange = (e) => {
+  const { name, value } = e.target;
+
+  setForm((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
+
+ const headers =
+  membersQuery.length > 0
+    ? Object.keys(membersQuery[0]).filter(k => k !== "_rowIndex")
+    : [];
+  // replicate the webAppUrl used in App.jsx
+  
+
+  const { search } = useLocation();
+  const params = new URLSearchParams(search);
+ // const time = params.get("time") || "";
+ // const { notify } = useNotification();
+
+   useEffect(() => {
+      document.body.className = theme
+      localStorage.setItem('theme', theme)
+    }, [theme])
+
+    useEffect(() => {
+    fetchData();
+}, []);
+
+//get select options
+  const getSelectOptions = (key) => {
+    const k = key.trim().toLowerCase()
+    switch (k) {
+      case 'status':
+        return STATUS_OPTIONS
+      case 'celebration':
+        return []
+      case 'category':
+        return CATEGORY_OPTIONS
+      case 'marital_status':
+        return MARITAL_OPTIONS
+      case 'ministry':
+        return MINISTRY_OPTIONS
+      default:
+        return null
+    }
+  }
+
+
+//VineAttendance
 
   const [allData, setAllData] = useState([]);
   const [vines, setVines] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(MONTHS[new Date().getMonth()]);
   const [selectedVine, setSelectedVine] = useState("");
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(false);
+
+
   const [weekColumns, setWeekColumns] = useState([]);
 
   const [originalData, setOriginalData] = useState({});
@@ -68,9 +207,7 @@ const [searchMember, setSearchMember] = useState("");
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [newMemberForm, setNewMemberForm] = useState({ first_name: "", last_name: "", v_id: "" });
-    const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "light";
-  });
+
 
 
   useEffect(() => {
@@ -203,7 +340,57 @@ const getDiff = (id, updates) => {
   // 🔥 BUFFER HANDLER
   // =========================
 
-  
+    const selectedVineData = vines.find(
+  vine => vine.id === String(selectedVine)
+);
+
+
+const handleAdd = async () => {
+  setLoading(true)
+  try {
+   const dataToSend = {
+  ...form,
+  cg_leader: selectedVineData?.name || "",
+};
+
+const res = await fetch(webAppUrl, {
+  method: "POST",
+  body: JSON.stringify({
+    action: "addQuery",
+    data: dataToSend,
+  }),
+});
+
+    const result = await res.json();
+
+    if (result.status === "success") {
+      notify.success("Member added successfully!");
+
+      setForm({
+        last_name: "",
+        first_name: "",
+        contac: "",
+        bday: "",
+        address: "",
+        status: "",
+        celebration: "3PM CENTRAL",
+        category: "",
+        marital_status: "",
+        wedding_anniv: "",
+        ministry: "",
+        cg_leader: selectedVineData?.name || "None",
+      });
+      setLoading(false)
+      setShowForm(false);
+    } else {
+      setLoading(false)
+      notify.error(result.message);
+    }
+  } catch (err) {
+    setLoading(false)
+    notify.error(err.message);
+  }
+};
 
 const updateBuffer = (memberId, field, value) => {
   setEditBuffer((prev) => {
@@ -375,6 +562,8 @@ const paginatedMembers = filteredMembers.slice(
   currentPage * ITEMS_PER_PAGE
 );
 
+console.log(vines)
+
   return (
     <div className="vine-attendance" style={{ padding: 12,  borderRadius: 8 }}>
       {saving && (
@@ -383,6 +572,14 @@ const paginatedMembers = filteredMembers.slice(
           Saving...
         </div>
       )}
+
+       {/* {loading && (
+  <div className="loading-overlay">
+    <div className="spinner" />
+    <p>Processing...</p>
+  </div>
+)}
+       */}
       <div className="vine-attendance__header">
        
       
@@ -467,6 +664,17 @@ const paginatedMembers = filteredMembers.slice(
 >
   {yearlyLoading ? "Generating Yearly Report..." : "Generate Yearly Report"}
 </button>
+
+          <button
+  onClick={() => setShowQueryModal(true)}
+  style={{
+    padding: "10px 20px",
+    fontWeight: "bold",
+    marginLeft: 10,
+  }}
+>
+  Open Member Query
+</button>
       </div>
        
 
@@ -516,6 +724,402 @@ const paginatedMembers = filteredMembers.slice(
       {loading && (
         <LoadingSpinner title="Loading Attendance Data" />
       )}
+
+      {showQueryModal && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 9980,
+    }}
+  >
+    <div
+      style={{
+        width: "90%",
+        maxWidth: 1200,
+        maxHeight: "85vh",
+        overflow: "auto",
+        background: theme === "dark" ? "#111827" : "#fff",
+        color: theme === "dark" ? "#fff" : "#111",
+        borderRadius: 10,
+        padding: 20,
+        boxShadow: "0 10px 30px rgba(0,0,0,.3)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 15,
+        }}
+      >
+        <h2 style={{ margin: 0, fontWeight: 'bold' }}>Member Query</h2>
+       
+
+        <button onClick={() => setShowQueryModal(false)}>
+          ✕
+        </button>
+      </div>
+       <button disabled={!selectedVine || members.length === 0} onClick={() => { resetForm(); setShowForm(true) }} style={{ padding: '10px 20px', cursor: !selectedVine ? "not-allowed" : "pointer", fontWeight: 'bold', marginBottom: 8 }} >
+            Add Member Details on System Query
+          </button>
+
+      <input
+        type="text"
+        placeholder="Search member..."
+        value={discipleSearch}
+        onChange={(e) => setDiscipleSearch(e.target.value)}
+        style={{
+          width: "100%",
+          padding: 10,
+          marginBottom: 15,
+          borderRadius: 6,
+        }}
+      />
+<div
+  style={{
+    overflowX: "auto",
+    maxHeight: "70vh",
+    overflowY: "auto",
+  }}
+>
+      <table
+  style={{
+    width: "100%",
+    borderCollapse: "collapse",
+  }}
+>
+  <thead>
+    <tr>
+      <th>Last Name</th>
+      <th>First Name</th>
+      <th>Contact</th>
+      <th>Birth Date</th>
+      <th>Address</th>
+      <th>Status</th>
+      <th>Celebration</th>
+      <th>Category</th>
+      <th>Marital Status</th>
+      <th>Wedding Anniversary</th>
+      <th>Ministry</th>
+      <th>CG Leader</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {membersQuery
+      .filter((m) => {
+        const search =
+          `${m.last_name} ${m.first_name}`.toLowerCase();
+
+        return search.includes(discipleSearch.toLowerCase());
+      })
+      .map((m) => (
+        <tr key={m.id}>
+          <td>{m.last_name}</td>
+          <td>{m.first_name}</td>
+          <td>{m.contac}</td>
+          <td>{m.bday}</td>
+          <td>{m.address}</td>
+          <td>{m.status}</td>
+          <td>{m.celebration}</td>
+          <td>{m.category}</td>
+          <td>{m.marital_status}</td>
+          <td>{m.wedding_anniv}</td>
+          <td>{m.ministry}</td>
+          <td>{m.cg_leader}</td>
+
+          <td>
+            <button
+              onClick={() => {
+                setForm({
+                  ...m,
+                  cg_leader: selectedVineData?.name || "",
+                });
+
+                setShowQueryModal(false);
+              }}
+            >
+              Select
+            </button>
+          </td>
+        </tr>
+      ))}
+  </tbody>
+</table>
+</div>
+    </div>
+  </div>
+)}
+
+         {showForm && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 9990,
+    }}
+  >
+    <div
+      className="animationCard"
+      style={{
+        background: "var(--card)",
+        color: "var(--text)",
+        padding: 30,
+        width: 500,
+        maxHeight: "90vh",
+        overflowY: "auto",
+        borderRadius: 10,
+      }}
+    >
+      <h2 style={{ textAlign: "center", fontWeight: 'bold', marginBottom: 8 }}>Add Member</h2>
+      
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+        <div>
+      <label style={{ display: "block", marginBottom: 5, fontWeight: 600 }}>
+        Last Name
+      </label>
+      <input
+        name="last_name"
+        value={form.last_name}
+        onChange={handleChange}
+        placeholder="Enter last name"
+      />
+    </div>
+
+    <div>
+      <label style={{ display: "block", marginBottom: 5, fontWeight: 600 }}>
+        First Name
+      </label>
+      <input
+        name="first_name"
+        value={form.first_name}
+        onChange={handleChange}
+        placeholder="Enter first name"
+      />
+    </div>
+
+    <div>
+      <label style={{ display: "block", marginBottom: 5, fontWeight: 600 }}>
+        Contact
+      </label>
+      <input
+        name="contac"
+        value={form.contac}
+        onChange={handleChange}
+        placeholder="Enter contact number"
+      />
+    </div>
+
+    <div>
+      <label style={{ display: "block", marginBottom: 5, fontWeight: 600 }}>
+        Birth Date
+      </label>
+      <input
+        type="date"
+        name="bday"
+        value={form.bday}
+        onChange={handleChange}
+      />
+    </div>
+
+    <div>
+      <label style={{ display: "block", marginBottom: 5, fontWeight: 600 }}>
+        Address
+      </label>
+      <input
+        name="address"
+        value={form.address}
+        onChange={handleChange}
+        placeholder="Enter address"
+      />
+    </div>
+
+    <div>
+  <label style={{ display: "block", marginBottom: 5, fontWeight: 600 }}>
+    Status
+  </label>
+
+  <select
+    name="status"
+    value={form.status}
+    onChange={handleChange}
+    style={{
+      width: "100%",
+      padding: "10px",
+      borderRadius: 8,
+      border: "1px solid #ccc",
+    }}
+  >
+    <option value="">Select Status</option>
+
+    {getSelectOptions("status")?.map((opt) => (
+      <option key={opt} value={opt}>
+        {opt}
+      </option>
+    ))}
+  </select>
+</div>
+
+   <div>
+  <label style={{ display: "block", marginBottom: 5, fontWeight: 600 }}>
+    Celebration
+  </label>
+
+  <input
+    name="celebration"
+    value="3PM Central"
+    disabled
+    onChange={handleChange}
+    style={{
+      width: "100%",
+      padding: "10px",
+      borderRadius: 8,
+      fontWeight: 'bold',
+      border: "1px solid #ccc",
+    }}
+  >
+   
+  </input>
+</div>
+
+  <div>
+  <label style={{ display: "block", marginBottom: 5, fontWeight: 600 }}>
+    Category
+  </label>
+
+  <select
+    name="category"
+    value={form.category}
+    onChange={handleChange}
+    style={{
+      width: "100%",
+      padding: "10px",
+      borderRadius: 8,
+      border: "1px solid #ccc",
+    }}
+  >
+    <option value="">Select Category</option>
+
+    {getSelectOptions("category")?.map((opt) => (
+      <option key={opt} value={opt}>
+        {opt}
+      </option>
+    ))}
+  </select>
+</div>
+
+  <div>
+  <label style={{ display: "block", marginBottom: 5, fontWeight: 600 }}>
+    Marital Status
+  </label>
+
+  <select
+    name="marital_status"
+    value={form.marital_status}
+    onChange={handleChange}
+    style={{
+      width: "100%",
+      padding: "10px",
+      borderRadius: 8,
+      border: "1px solid #ccc",
+    }}
+  >
+    <option value="">Select Marital Status</option>
+
+    {getSelectOptions("marital_status")?.map((opt) => (
+      <option key={opt} value={opt}>
+        {opt}
+      </option>
+    ))}
+  </select>
+</div>
+
+    <div>
+      <label style={{ display: "block", marginBottom: 5, fontWeight: 600 }}>
+        Wedding Anniversary
+      </label>
+      <input
+        type="date"
+        name="wedding_anniv"
+        value={form.wedding_anniv}
+        onChange={handleChange}
+      />
+    </div>
+
+  <div>
+  <label style={{ display: "block", marginBottom: 5, fontWeight: 600 }}>
+    Ministry
+  </label>
+
+  <select
+    name="ministry"
+    value={form.ministry}
+    onChange={handleChange}
+    style={{
+      width: "100%",
+      padding: "10px",
+      borderRadius: 8,
+      border: "1px solid #ccc",
+    }}
+  >
+    <option value="">Select Ministry</option>
+
+    {getSelectOptions("ministry")?.map((opt) => (
+      <option key={opt} value={opt}>
+        {opt}
+      </option>
+    ))}
+  </select>
+</div>
+
+    <div>
+      <label style={{ display: "block", marginBottom: 5, fontWeight: 600 }}>
+        Care Group Leader
+      </label>
+      <input
+        name="cg_leader"
+        disabled
+        style={{fontWeight: 'bold'}}
+        value={selectedVineData?.name || ""}
+        onChange={handleChange}
+        placeholder="Enter care group leader"
+      />
+    </div>
+
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "flex-end",
+        gap: 10,
+        marginTop: 20,
+      }}
+    >
+      <button onClick={handleAdd} disabled={actionLoading}>
+        {actionLoading ? "Adding..." : "Add Member"}
+      </button>
+
+      <button onClick={resetForm}>
+        Cancel
+      </button>
+    
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
       
       {/* ADD MEMBER FORM */}
