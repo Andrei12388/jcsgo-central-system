@@ -685,7 +685,7 @@ console.log(vines)
     marginLeft: 10,
   }}
 >
-  Open Member Query
+  Open Member Queue
 </button>
       </div>
        
@@ -770,7 +770,7 @@ console.log(vines)
           marginBottom: 15,
         }}
       >
-        <h2 style={{ margin: 0, fontWeight: 'bold' }}>Member Query</h2>
+        <h2 style={{ margin: 0, fontWeight: 'bold' }}>Member Queue</h2>
        
 
         <button onClick={() => setShowQueryModal(false)}>
@@ -778,7 +778,7 @@ console.log(vines)
         </button>
       </div>
        <button disabled={!selectedVine || members.length === 0} onClick={() => { resetForm(); setShowForm(true) }} style={{ padding: '10px 20px', cursor: !selectedVine ? "not-allowed" : "pointer", fontWeight: 'bold', marginBottom: 8 }} >
-            Add Member Details on System Query
+            Add Member Details on System Queue
           </button>
 
       <input
