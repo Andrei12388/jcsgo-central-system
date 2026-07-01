@@ -69,12 +69,27 @@ export const generateVineWeeklyReport = ({
     return vine?.name || `Vine #${selectedVine || "Unknown"}`;
   };
 
+const sumAttendance = (field, attendance) =>
+  members.filter((m) => {
+    const isSelectedWeek =
+      String(m[field] || "").toUpperCase() ===
+      selectedWeek.toUpperCase();
+
+    const attended =
+      String(m[selectedWeek] || "")
+        .toUpperCase()
+        .includes(attendance.toUpperCase());
+
+    return isSelectedWeek && attended;
+  }).length;
+
 const sum = (field) =>
-  members.filter((m) =>
-    String(m[selectedWeek] || "")
-      .toUpperCase()
-      .includes(field)
-  ).length;
+  members.filter((m) => {
+    return (
+      String(m[field] || "").toUpperCase() ===
+      selectedWeek.toUpperCase()
+    );
+  }).length;
 
 const getWeekValue = (m, keyword) => {
   return String(m[selectedWeek] || "")
@@ -106,7 +121,7 @@ const getWeekValue = (m, keyword) => {
     doc.text(title, 14, startY);
 
     autoTable(doc, {
-      startY: startY + 4,
+      startY: startY + 2,
       head: [["", "Onsite/Actual", "Online", "TOTAL"]],
       body: rows,
       theme: "grid",
@@ -136,12 +151,37 @@ const online = members.filter((m) =>
   // 2. NEW FRIENDS
   // =========================
   addSection("2. New Friends", [
-    ["1st Timers", "", "", sum("1ST_TIMER")],
-    ["2nd Timers", "", "", sum("2ND_TIMER")],
-    ["3rd Timers", "", "", sum("3RD_TIMER")],
-    ["4th Timers", "", "", sum("4TH_TIMER")],
-    ["5th Timers", "", "", sum("5TH_TIMER")],
-  ]);
+  [
+    "1st Timers",
+    sumAttendance("1ST_TIMER", "ONSITE"),
+    sumAttendance("1ST_TIMER", "ONLINE"),
+    sum("1ST_TIMER"),
+  ],
+  [
+    "2nd Timers",
+    sumAttendance("2ND_TIMER", "ONSITE"),
+    sumAttendance("2ND_TIMER", "ONLINE"),
+    sum("2ND_TIMER"),
+  ],
+  [
+    "3rd Timers",
+    sumAttendance("3RD_TIMER", "ONSITE"),
+    sumAttendance("3RD_TIMER", "ONLINE"),
+    sum("3RD_TIMER"),
+  ],
+  [
+    "4th Timers",
+    sumAttendance("4TH_TIMER", "ONSITE"),
+    sumAttendance("4TH_TIMER", "ONLINE"),
+    sum("4TH_TIMER"),
+  ],
+  [
+    "5th Timers",
+    sumAttendance("5TH_TIMER", "ONSITE"),
+    sumAttendance("5TH_TIMER", "ONLINE"),
+    sum("5TH_TIMER"),
+  ],
+]);
 
   // =========================
   // 3. CARE ACTIVITY
@@ -155,41 +195,36 @@ const online = members.filter((m) =>
   // =========================
   // 4. HAYO / EVANGELISM
   // =========================
-  addSection("4. Hayo / Evangelism", [
+  addSection("4. Other Activities", [
     ["Hayo/Evangelism", "", "", sum("HAYO")],
-  ]);
-
-  // =========================
-  // 5. LIGHTHOUSE OF PRAYER
-  // =========================
-  addSection("5. Lighthouse of Prayer", [
     ["Prayer", "", "", sum("PRAYER")],
-  ]);
-
-  // =========================
-  // 6. FOLLOW-UP
-  // =========================
-  addSection("6. Follow-up / Reactivation", [
     ["Follow-up", "", "", sum("FOLLOWUP")],
     ["Reactivation", "", "", sum("REACTIVATION")],
-  ]);
-
-  // =========================
-  // 7. FIELD REPORT
-  // =========================
-  addSection("7. Field Report", [
     ["Field Care Group", "", "", sum("FIELD_CARE")],
     ["Field Disciple", "", "", sum("FIELD_CARE")],
+    
   ]);
-  
 
   // =========================
-  // OUTREACH
+  // 5. Outreach
   // =========================
-  addSection("Outreach", [
+  addSection("5. Outreach", [
     ["Outreach Group", "", "", sum("OUTREACH_GROUP")],
     ["Outreach Disciples", "", "", sum("OUTREACH_DISCIPLES")],
   ]);
+
+    // =========================
+    // FOOTER
+    // =========================
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 3,
+      body: [
+        ["Remarks:",],
+      ],
+      theme: "plain",
+    });
+
+
 
   // =========================
   // EXPORT PDF

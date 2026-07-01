@@ -574,7 +574,7 @@ const paginatedMembers = filteredMembers.slice(
   currentPage * ITEMS_PER_PAGE
 );
 
-console.log(vines)
+console.log(members)
 
   return (
     <div className="vine-attendance" style={{ padding: 12,  borderRadius: 8 }}>

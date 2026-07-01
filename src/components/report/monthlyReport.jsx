@@ -11,6 +11,24 @@ export const generateCentralMonthlyReport = ({
   // =========================
   // HELPERS
   // =========================
+
+  const isAttendance = (m, attendance) =>
+  ["WEEK1", "WEEK2", "WEEK3", "WEEK4", "WEEK5"].some((week) =>
+    String(m[week] || "")
+      .toUpperCase()
+      .includes(attendance.toUpperCase())
+  );
+
+  const sumTimer = (field) =>
+  members.filter((m) => String(m[field] || "").trim() !== "").length;
+
+  const sumTimerAttendance = (field, attendance) =>
+  members.filter((m) => {
+    const hasTimer = String(m[field] || "").trim() !== "";
+
+    return hasTimer && isAttendance(m, attendance);
+  }).length;
+
   const isChecked = (val) =>
     val === true ||
     val === 1 ||
@@ -32,6 +50,34 @@ export const generateCentralMonthlyReport = ({
   const totalMembers = members.length;
 
   const getVineName = () => "ALL VINES (GLOBAL REPORT)";
+
+  // Sunday Attendance
+
+  const weekFields = ["WEEK1", "WEEK2", "WEEK3", "WEEK4", "WEEK5"];
+
+const totalOnsite = members.reduce((total, member) => {
+  return (
+    total +
+    weekFields.filter((week) =>
+      String(member[week] || "")
+        .toUpperCase()
+        .includes("ONSITE")
+    ).length
+  );
+}, 0);
+
+const totalOnline = members.reduce((total, member) => {
+  return (
+    total +
+    weekFields.filter((week) =>
+      String(member[week] || "")
+        .toUpperCase()
+        .includes("ONLINE")
+    ).length
+  );
+}, 0);
+
+const totalSundayAttendance = totalOnsite + totalOnline;
 
   // =========================
   // TITLE (UNCHANGED STYLE)
@@ -62,7 +108,7 @@ export const generateCentralMonthlyReport = ({
     ["Men", "", "", sumField("MEN")],
     ["Women", "", "", sumField("WOMEN")],
 
-    ["Sunday Attendance", "", "", ""],
+    ["Sunday Attendance", totalOnsite, totalOnline, totalSundayAttendance],
     ["Youth Men", "", "", sumField("SUNDAY_YOUTH_MEN")],
     ["Youth Women", "", "", sumField("SUNDAY_YOUTH_WOMEN")],
     ["Men", "", "", sumField("SUNDAY_MEN")],
@@ -83,13 +129,48 @@ export const generateCentralMonthlyReport = ({
     startY: doc.lastAutoTable.finalY + 10,
     head: [["New Believers", "Onsite", "Online", "TOTAL"]],
     body: [
-      ["1st Timers", "", "", sumField("1ST_TIMER")],
-      ["2nd Timers", "", "", sumField("2ND_TIMER")],
-      ["3rd Timers", "", "", sumField("3RD_TIMER")],
-      ["4th Timers", "", "", sumField("4TH_TIMER")],
-      ["5th Timers / Conversion", "", "", sumField("5TH_TIMER")],
-      ["Power Filled Life", "", "", sumField("POWER_FILLED")],
-      ["Water Baptism", "", "", sumField("WATER_BAPTISM")],
+      [
+  "1st Timers",
+  sumTimerAttendance("1ST_TIMER", "ONSITE"),
+  sumTimerAttendance("1ST_TIMER", "ONLINE"),
+  sumTimer("1ST_TIMER"),
+],
+      [
+  "2nd Timers",
+  sumTimerAttendance("2ND_TIMER", "ONSITE"),
+  sumTimerAttendance("2ND_TIMER", "ONLINE"),
+  sumTimer("2ND_TIMER"),
+],
+      [
+  "3rd Timers",
+  sumTimerAttendance("3RD_TIMER", "ONSITE"),
+  sumTimerAttendance("3RD_TIMER", "ONLINE"),
+  sumTimer("3RD_TIMER"),
+],
+      [
+  "4th Timers",
+  sumTimerAttendance("4TH_TIMER", "ONSITE"),
+  sumTimerAttendance("4TH_TIMER", "ONLINE"),
+  sumTimer("4TH_TIMER"),
+],
+      [
+  "5th Timers / Conversion",
+  sumTimerAttendance("5TH_TIMER", "ONSITE"),
+  sumTimerAttendance("5TH_TIMER", "ONLINE"),
+  sumTimer("5TH_TIMER"),
+],
+      [
+  "Power Filled Life",
+  sumTimerAttendance("POWER_FILLED", "ONSITE"),
+  sumTimerAttendance("POWER_FILLED", "ONLINE"),
+  sumTimer("POWER_FILLED"),
+],
+      [
+  "Water Baptism",
+  "",
+  "",
+  sumField("WATER_BAPTISM"),
+],
     ],
     theme: "grid",
   });
