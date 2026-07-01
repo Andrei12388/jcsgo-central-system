@@ -51,8 +51,32 @@ export const generateCentralMonthlyReport = ({
 
   const getVineName = () => "ALL VINES (GLOBAL REPORT)";
 
-  // Sunday Attendance
+  //Unique Sunday attendance
+  const weekFields = ["WEEK1", "WEEK2", "WEEK3", "WEEK4", "WEEK5"];
 
+const totalOnsite = members.filter((m) =>
+  weekFields.some((week) =>
+    String(m[week] || "").toUpperCase().includes("ONSITE")
+  )
+).length;
+
+const totalOnline = members.filter((m) =>
+  weekFields.some((week) =>
+    String(m[week] || "").toUpperCase().includes("ONLINE")
+  )
+).length;
+
+/*const totalSundayAttendance = members.filter((m) =>
+  weekFields.some((week) => {
+    const value = String(m[week] || "").toUpperCase();
+    return value.includes("ONSITE") || value.includes("ONLINE");
+  })
+).length; */
+
+const totalSundayAttendance = totalOnsite + totalOnline;
+
+  // Sunday Attendance
+/*
   const weekFields = ["WEEK1", "WEEK2", "WEEK3", "WEEK4", "WEEK5"];
 
 const totalOnsite = members.reduce((total, member) => {
@@ -77,7 +101,9 @@ const totalOnline = members.reduce((total, member) => {
   );
 }, 0);
 
-const totalSundayAttendance = totalOnsite + totalOnline;
+
+
+*/
 
   // =========================
   // TITLE (UNCHANGED STYLE)
@@ -101,13 +127,16 @@ const totalSundayAttendance = totalOnsite + totalOnline;
   // =========================
   const churchTable = [
     ["Church Attendance", "Onsite", "Online", "TOTAL"],
+    ["2026 Target", "", "", ""],
     ["Registered Disciples", "", "", totalMembers],
-
     ["Youth Men", "", "", sumField("YOUTH_MEN")],
     ["Youth Women", "", "", sumField("YOUTH_WOMEN")],
     ["Men", "", "", sumField("MEN")],
     ["Women", "", "", sumField("WOMEN")],
+  ];
 
+    const sundayTable = [
+    ["Sunday Attendance", "Onsite", "Online", "TOTAL"],
     ["Sunday Attendance", totalOnsite, totalOnline, totalSundayAttendance],
     ["Youth Men", "", "", sumField("SUNDAY_YOUTH_MEN")],
     ["Youth Women", "", "", sumField("SUNDAY_YOUTH_WOMEN")],
@@ -116,9 +145,16 @@ const totalSundayAttendance = totalOnsite + totalOnline;
   ];
 
   autoTable(doc, {
-    startY: 45,
+    startY: 50,
     head: [churchTable[0]],
     body: churchTable.slice(1),
+    theme: "grid",
+  });
+
+  autoTable(doc, {
+    startY: 95,
+    head: [sundayTable[0]],
+    body: sundayTable.slice(1),
     theme: "grid",
   });
 
