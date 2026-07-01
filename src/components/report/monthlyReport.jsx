@@ -1,12 +1,18 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { createChartImage } from "./chartToImage";
 
-export const generateCentralMonthlyReport = ({
+export const generateCentralMonthlyReport = async ({
   allData,
   vines,
   selectedMonth,
 }) => {
   const doc = new jsPDF("p", "mm", "a4");
+
+const YOUNG_WOMEN_VINES = [1, 23, 244, 140];
+const YOUNG_MEN_VINES = [76, 120, 167];
+const MEN_VINES = [1230];
+const WOMEN_VINES = [1236, 1255, 1283];
 
   // =========================
   // HELPERS
@@ -73,7 +79,35 @@ const totalOnline = members.filter((m) =>
   })
 ).length; */
 
-const totalSundayAttendance = totalOnsite + totalOnline;
+
+const countCategoryAttendance = (vineIds, attendance) =>
+  members.filter((m) =>
+    vineIds.includes(Number(m.v_id)) &&
+    weekFields.some((week) =>
+      String(m[week] || "")
+        .toUpperCase()
+        .includes(attendance.toUpperCase())
+    )
+  ).length;
+
+const countCategoryTotal = (vineIds) =>
+  members.filter((m) =>
+    vineIds.includes(Number(m.v_id)) &&
+    weekFields.some((week) => {
+      const value = String(m[week] || "").toUpperCase();
+      return value.includes("ONSITE") || value.includes("ONLINE");
+    })
+  ).length;
+
+const totalSundayAttendance = members.filter((m) =>
+  weekFields.some((week) => {
+    const value = String(m[week] || "").toUpperCase();
+    return value.includes("ONSITE") || value.includes("ONLINE");
+  })
+).length;
+
+const countByVineCategory = (vineIds) =>
+  members.filter((m) => vineIds.includes(Number(m.v_id))).length;
 
   // Sunday Attendance
 /*
@@ -121,38 +155,59 @@ const totalOnline = members.reduce((total, member) => {
   doc.setFontSize(10);
   doc.text(`Vine: ${getVineName()}`, 14, 32);
   doc.text(`Month: ${selectedMonth}`, 14, 38);
+  doc.text(`Date Exported: ${new Date().toLocaleDateString()}`, 145, 32);
 
   // =========================
   // SECTION I
   // =========================
   const churchTable = [
-    ["Church Attendance", "Onsite", "Online", "TOTAL"],
-    ["2026 Target", "", "", ""],
-    ["Registered Disciples", "", "", totalMembers],
-    ["Youth Men", "", "", sumField("YOUTH_MEN")],
-    ["Youth Women", "", "", sumField("YOUTH_WOMEN")],
-    ["Men", "", "", sumField("MEN")],
-    ["Women", "", "", sumField("WOMEN")],
+    ["I. Church Attendance",  "TOTAL"],
+    ["2026 Target",  ""],
+    ["Registered Disciples",  totalMembers],
+    ["Youth Men",  countByVineCategory(YOUNG_MEN_VINES)],
+["Youth Women",  countByVineCategory(YOUNG_WOMEN_VINES)],
+["Men",  countByVineCategory(MEN_VINES)],
+["Women",  countByVineCategory(WOMEN_VINES)],
   ];
 
     const sundayTable = [
-    ["Sunday Attendance", "Onsite", "Online", "TOTAL"],
+    ["", "Onsite", "Online", "TOTAL"],
     ["Sunday Attendance", totalOnsite, totalOnline, totalSundayAttendance],
-    ["Youth Men", "", "", sumField("SUNDAY_YOUTH_MEN")],
-    ["Youth Women", "", "", sumField("SUNDAY_YOUTH_WOMEN")],
-    ["Men", "", "", sumField("SUNDAY_MEN")],
-    ["Women", "", "", sumField("SUNDAY_WOMEN")],
+   [
+  "Youth Men",
+  countCategoryAttendance(YOUNG_MEN_VINES, "ONSITE"),
+  countCategoryAttendance(YOUNG_MEN_VINES, "ONLINE"),
+  countCategoryTotal(YOUNG_MEN_VINES),
+],
+[
+  "Youth Women",
+  countCategoryAttendance(YOUNG_WOMEN_VINES, "ONSITE"),
+  countCategoryAttendance(YOUNG_WOMEN_VINES, "ONLINE"),
+  countCategoryTotal(YOUNG_WOMEN_VINES),
+],
+[
+  "Men",
+  countCategoryAttendance(MEN_VINES, "ONSITE"),
+  countCategoryAttendance(MEN_VINES, "ONLINE"),
+  countCategoryTotal(MEN_VINES),
+],
+[
+  "Women",
+  countCategoryAttendance(WOMEN_VINES, "ONSITE"),
+  countCategoryAttendance(WOMEN_VINES, "ONLINE"),
+  countCategoryTotal(WOMEN_VINES),
+],
   ];
 
   autoTable(doc, {
-    startY: 50,
+    startY: 42,
     head: [churchTable[0]],
     body: churchTable.slice(1),
     theme: "grid",
   });
 
   autoTable(doc, {
-    startY: 95,
+    startY: 97,
     head: [sundayTable[0]],
     body: sundayTable.slice(1),
     theme: "grid",
@@ -162,8 +217,8 @@ const totalOnline = members.reduce((total, member) => {
   // SECTION II
   // =========================
   autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 10,
-    head: [["New Believers", "Onsite", "Online", "TOTAL"]],
+    startY: doc.lastAutoTable.finalY + 5,
+    head: [["II. New Believers", "Onsite", "Online", "TOTAL"]],
     body: [
       [
   "1st Timers",
@@ -197,15 +252,11 @@ const totalOnline = members.reduce((total, member) => {
 ],
       [
   "Power Filled Life",
-  sumTimerAttendance("POWER_FILLED", "ONSITE"),
-  sumTimerAttendance("POWER_FILLED", "ONLINE"),
-  sumTimer("POWER_FILLED"),
+ "","",""
 ],
       [
   "Water Baptism",
-  "",
-  "",
-  sumField("WATER_BAPTISM"),
+  "","",""
 ],
     ],
     theme: "grid",
@@ -216,10 +267,22 @@ const totalOnline = members.reduce((total, member) => {
   // =========================
   autoTable(doc, {
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["Integration & Mobilization", "Onsite", "Online", "TOTAL"]],
+    head: [["III. Integration & Mobilization", "Onsite", "Online", "TOTAL"]],
     body: [
-      ["Care Leaders / Group", "", "", sumField("CARE_GROUP_LEADER")],
-      ["Active Disciples", "", "", totalMembers],
+      ["Vine Servant Leaders", "", "", ""],
+      ["Cluster Servant Leaders", "", "", ""],
+      ["Care Leaders / Group", "", "", ""],
+      ["Active Leadership/Groups for the week/month", "", "", ""],
+      ["Total Active Disciples for the week/month", "", "", ""],
+      ["",],
+      ["FIELD",],
+      ["Hayo/Evangelism", "", "", ""],
+      ["Light House", "", "", ""],
+      ["Field Care Group", "", "", ""],
+      ["Field Care Disciples", "", "", ""],
+      ["",],
+      ["Follow-Up", "", "", ""],
+      ["Reactivation", "", "", ""],
     ],
     theme: "grid",
   });
@@ -229,10 +292,11 @@ const totalOnline = members.reduce((total, member) => {
   // =========================
   autoTable(doc, {
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["Other Ministries", "Onsite", "Online", "TOTAL"]],
+    head: [["IV. Other Ministries", "Onsite", "Online", "TOTAL"]],
     body: [
-      ["Children's Church", "", "", sumField("CHILDREN")],
-      ["Outreach Disciples", "", "", sumField("OUTREACH")],
+      ["Children's Church", "", "", ""],
+      ["Barangay/Field Outreach", "", "", ""],
+      ["Outreach Disciples", "", "", ""],
     ],
     theme: "grid",
   });
@@ -244,12 +308,147 @@ const totalOnline = members.reduce((total, member) => {
     startY: doc.lastAutoTable.finalY + 10,
     body: [
       ["NARRATIVE REPORT", "", "", ""],
-      ["Submitted by:", "", "Date:", new Date().toLocaleDateString()],
+      ["Submitted by:", "", ],
       ["Outreach/Family", "", "", ""],
     ],
     theme: "plain",
   });
 
+// =========================
+// PAGE 2 - DASHBOARD
+// =========================
+const chartW = 88;
+const chartH = 60;
+
+const leftX = 10;
+const rightX = 110;
+
+const topY = 28;
+const bottomY = 105;
+
+doc.addPage();
+
+doc.setFontSize(18);
+doc.text("ATTENDANCE GRAPH", 105, 15, {
+  align: "center",
+});
+
+doc.setFontSize(10);
+doc.text(selectedMonth, 105, 22, {
+  align: "center",
+});
+
+const churchImage = await createChartImage({
+  type: "bar",
+  title: "Church Attendance",
+  labels: [
+    "Youth Men",
+    "Youth Women",
+    "Men",
+    "Women",
+  ],
+  data: [
+    countByVineCategory(YOUNG_MEN_VINES),
+    countByVineCategory(YOUNG_WOMEN_VINES),
+    countByVineCategory(MEN_VINES),
+    countByVineCategory(WOMEN_VINES),
+  ],
+});
+
+
+// ---------- Sunday Attendance ----------
+const sundayImage = await createChartImage({
+  type: "bar",
+  title: "Sunday Attendance",
+  labels: [
+    "Youth Men",
+    "Youth Women",
+    "Men",
+    "Women",
+  ],
+  data: [
+    countCategoryTotal(YOUNG_MEN_VINES),
+    countCategoryTotal(YOUNG_WOMEN_VINES),
+    countCategoryTotal(MEN_VINES),
+    countCategoryTotal(WOMEN_VINES),
+  ],
+});
+
+
+
+// ---------- Registered Disciples ----------
+const demographicsImage = await createChartImage({
+  type: "pie",
+  title: "Registered Disciples",
+  labels: [
+    "Youth Men",
+    "Youth Women",
+    "Men",
+    "Women",
+  ],
+  data: [
+    countByVineCategory(YOUNG_MEN_VINES),
+    countByVineCategory(YOUNG_WOMEN_VINES),
+    countByVineCategory(MEN_VINES),
+    countByVineCategory(WOMEN_VINES),
+  ],
+});
+
+
+
+// ---------- New Believers ----------
+const believersImage = await createChartImage({
+  type: "bar",
+  title: "New Believers",
+  labels: [
+    "1st",
+    "2nd",
+    "3rd",
+    "4th",
+    "5th",
+  ],
+  data: [
+    sumTimer("1ST_TIMER"),
+    sumTimer("2ND_TIMER"),
+    sumTimer("3RD_TIMER"),
+    sumTimer("4TH_TIMER"),
+    sumTimer("5TH_TIMER"),
+  ],
+});
+
+
+
+// ---------- Other Ministries ----------
+const ministryImage = await createChartImage({
+  type: "bar",
+  title: "Other Ministries",
+  labels: [
+    "Care",
+    "Power",
+    "Baptism",
+    "Outreach",
+  ],
+  data: [
+    sumField("CARE_GROUP_LEADER"),
+    sumTimer("POWER_FILLED"),
+    sumField("WATER_BAPTISM"),
+    sumField("OUTREACH"),
+  ],
+});
+
+// Top Left
+doc.addImage(churchImage, "PNG", leftX, topY, chartW, chartH);
+
+// Top Right
+doc.addImage(sundayImage, "PNG", rightX, topY, chartW, chartH);
+
+// Bottom Left
+doc.addImage(believersImage, "PNG", leftX, bottomY, chartW, chartH);
+
+// Bottom Right
+doc.addImage(ministryImage, "PNG", rightX, bottomY, chartW, chartH);
+
+ //export pdf
   const blob = doc.output("blob");
   const url = URL.createObjectURL(blob);
   window.open(url);
