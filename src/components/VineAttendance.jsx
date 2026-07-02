@@ -447,7 +447,7 @@ const updateBuffer = (memberId, field, value) => {
   // =========================
 
  const saveAllChanges = async () => {
-  if (!Object.keys(editBuffer).length) return;
+  if (!Object.keys(editBuffer).length) return true;
 
   setSaving(true);
 
@@ -467,18 +467,23 @@ const updateBuffer = (memberId, field, value) => {
       body: JSON.stringify({
         action: "batchEdit",
         month: selectedMonth,
-        updates: optimizedUpdates
-      })
+        updates: optimizedUpdates,
+      }),
     });
 
     const refreshed = await fetchAll();
+
     setAllData(refreshed);
     setEditBuffer({});
     setDirtyRows({});
+
     notify?.success("Changes saved successfully");
+
+    return true;
   } catch (err) {
     console.error(err);
     notify?.error("Failed to save changes");
+    return false;
   } finally {
     setSaving(false);
   }
@@ -511,38 +516,54 @@ const updateBuffer = (memberId, field, value) => {
   }
 };
 
-  const addMember = async () => {
-    if (!newMemberForm.first_name.trim()) {
-      alert("Please enter at least a first name");
-      return;
-    }
+ const addMember = async () => {
+  if (!newMemberForm.first_name.trim()) {
+    alert("Please enter at least a first name");
+    return;
+  }
 
-    setSaving(true);
-    try {
-      await fetch(webAppUrl, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "add",
-          month: selectedMonth,
-          data: {
-            v_id: selectedVine,
-            first_name: newMemberForm.first_name,
-            last_name: newMemberForm.last_name
-          }
-        })
-      });
+  // Save pending edits first
+if (Object.keys(editBuffer).length > 0) {
+  notify?.success("Saving pending changes...");
 
-      setNewMemberForm({ first_name: "", last_name: "", v_id: "" });
-      const refreshed = await fetchAll();
-      setAllData(refreshed);
-      notify?.success("Member added successfully");
-    } catch (err) {
-      console.error(err);
-      notify?.error("Error adding member");
-    } finally {
-      setSaving(false);
-    }
-  };
+  const saved = await saveAllChanges();
+
+  if (!saved) return;
+}
+
+  setSaving(true);
+
+  try {
+    await fetch(webAppUrl, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "add",
+        month: selectedMonth,
+        data: {
+          v_id: selectedVine,
+          first_name: newMemberForm.first_name,
+          last_name: newMemberForm.last_name,
+        },
+      }),
+    });
+
+    setNewMemberForm({
+      first_name: "",
+      last_name: "",
+      v_id: "",
+    });
+
+    const refreshed = await fetchAll();
+    setAllData(refreshed);
+
+    notify?.success("Member added successfully");
+  } catch (err) {
+    console.error(err);
+    notify?.error("Error adding member");
+  } finally {
+    setSaving(false);
+  }
+};
 
   const fetchAll = async () => {
     const url =
