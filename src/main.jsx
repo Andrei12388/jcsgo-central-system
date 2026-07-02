@@ -9,13 +9,17 @@ import DashboardPage from './pages/DashboardPage'
 import MemberSystemPage from './pages/MemberSystemPage'
 import SidebarLayout from './layouts/SidebarLayout.jsx'
 import CalendarPage from './pages/CalendarPage.jsx'
+import ProgressBar from './components/ui/ProgressBar/ProgressBar.tsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
+    
     <NotificationProvider>
       
       <Router>
+        <ProgressBar />
         <Routes>
+          
           <Route path="/" element={<App />} />
           <Route element={<SidebarLayout />}>
           

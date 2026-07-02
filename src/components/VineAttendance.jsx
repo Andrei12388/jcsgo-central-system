@@ -8,6 +8,7 @@ import { generateCentralMonthlyReport } from "./report/monthlyReport";
 import { generateVineYearlyReport } from "./report/yearlyReport";
 import { getSelectedWeekSunday } from "./report/weeklyReport";
 import LoadingSpinner from "./ui/LoadingSpinner";
+import StatsChart from "./report/statsChart";
 
 export default function VineAttendance({ webAppUrl, time, notify }) {
   const MONTHS = [
@@ -593,6 +594,18 @@ console.log(members)
 )}
        */}
       <div className="vine-attendance__header">
+
+        <StatsChart
+      title="Members by Ministry"
+      labels={[
+        "Music",
+        "Media",
+        "Usher",
+        "Youth",
+        "Kids",
+      ]}
+      data={[24, 15, 18, 31, 10]}
+    />
        
       
      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyItems: "center", gap: 4, border:  theme === "dark" ? "1px solid #374151" : "1px solid #d1d5db", padding: 6, borderRadius: 4 }}>
