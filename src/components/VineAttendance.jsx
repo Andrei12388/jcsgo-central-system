@@ -10,6 +10,22 @@ import { getSelectedWeekSunday } from "./report/weeklyReport";
 import LoadingSpinner from "./ui/LoadingSpinner";
 import StatsChart from "./report/statsChart";
 
+const headerStyle = {
+  position: "sticky",
+  top: 0,
+  background: "var(--card)",
+  color: "var(--foreground)",
+  padding: "10px",
+  borderBottom: "1px solid var(--border)",
+  textAlign: "left",
+  zIndex: 1,
+};
+
+const cellStyle = {
+  padding: "10px",
+  borderBottom: "1px solid var(--border)",
+};
+
 export default function VineAttendance({ webAppUrl, time, notify }) {
   const MONTHS = [
     "JANUARY",
@@ -669,9 +685,6 @@ const showVineAttendance = (vineId) => {
 
 //
 
-console.log(vineLabels);
-console.log(vineData);
-
 
   return (
     <div className="vine-attendance" style={{ padding: 12,  borderRadius: 8 }}>
@@ -715,60 +728,165 @@ console.log(vineData);
 
   showVineAttendance(vine.id);
 }}
-/>
+/>  
 
 {selectedVineAttendance && (
-  <div >
-    <div >
+  <div
+    onClick={() => setSelectedVineAttendance(null)}
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 9990,
+    }}
+  >
+    <div
+      className="animationCard"
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        background: "var(--card)",
+        color: "var(--foreground)",
+        padding: 24,
+        width: "min(900px, 95vw)",
+        maxHeight: "90vh",
+        overflow: "hidden",
+        borderRadius: 10,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+        }}
+      >
+        <div>
+          <h2 style={{ margin: 0 }}>
+            {selectedVineAttendance.vine.name}
+          </h2>
 
-      <h2>{selectedVineAttendance.vine.name}</h2>
+          <p
+            style={{
+              marginTop: 6,
+              opacity: 0.8,
+            }}
+          >
+            Total Attendance:{" "}
+            <strong>
+              {selectedVineAttendance.attendees.length}
+            </strong>
+          </p>
+        </div>
 
-      <p>
-        Total Attendance: {selectedVineAttendance.attendees.length}
-      </p>
+        <button
+          onClick={() => setSelectedVineAttendance(null)}
+          style={{
+            fontSize: 18,
+            padding: "6px 12px",
+            cursor: "pointer",
+          }}
+        >
+          ✕
+        </button>
+      </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Name</th>
-            <th>Week</th>
-            <th>Attendance</th>
-          </tr>
-        </thead>
+      {/* Table */}
+      <div
+  style={{
+    overflowY: "auto",
+    flex: 1,
+    border: "1px solid var(--border)",
+    borderRadius: 6,
+  }}
+>
+  <table
+    style={{
+      width: "100%",
+      borderCollapse: "collapse",
+    }}
+  >
+    <thead>
+      <tr>
+        <th style={headerStyle}>#</th>
+        <th style={headerStyle}>Name</th>
 
-        <tbody>
-          {selectedVineAttendance.attendees.map((m, index) => {
+        {weekFields.map((week) => (
+          <th key={week} style={headerStyle}>
+            {week}
+          </th>
+        ))}
+      </tr>
+    </thead>
 
-            const week = weekFields.find((w) =>
-              String(m[w] || "").toUpperCase().includes("ONLINE") ||
-              String(m[w] || "").toUpperCase().includes("ONSITE")
-            );
+    <tbody>
+      {selectedVineAttendance.attendees.map((m, index) => (
+        <tr key={m.id}>
+          <td style={cellStyle}>{index + 1}</td>
+
+          <td style={cellStyle}>
+            {m.first_name} {m.last_name}
+          </td>
+
+          {weekFields.map((week) => {
+            const value = String(m[week] || "").trim();
 
             return (
-              <tr key={m.id}>
-                <td>{index + 1}</td>
-                <td>
-                  {m.first_name} {m.last_name}
-                </td>
-                <td>{week}</td>
-                <td>{m[week]}</td>
-              </tr>
+              <td
+                key={week}
+                style={{
+                  ...cellStyle,
+                  textAlign: "center",
+                  fontWeight:
+                    value === "ONLINE" || value === "ONSITE"
+                      ? "bold"
+                      : "normal",
+                  color:
+                    value === "ONLINE"
+                      ? "#2563eb"
+                      : value === "ONSITE"
+                      ? "#16a34a"
+                      : "inherit",
+                }}
+              >
+                {value || "-"}
+              </td>
             );
           })}
-        </tbody>
-      </table>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
 
-      <button
-        onClick={() => setSelectedVineAttendance(null)}
+      {/* Footer */}
+      <div
+        style={{
+          marginTop: 20,
+          display: "flex",
+          justifyContent: "flex-end",
+        }}
       >
-        Close
-      </button>
-
+        <button
+          onClick={() => setSelectedVineAttendance(null)}
+          style={{
+            padding: "10px 18px",
+            borderRadius: 6,
+            cursor: "pointer",
+          }}
+        >
+          Close
+        </button>
+      </div>
     </div>
   </div>
 )}
-       
       
      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyItems: "center", gap: 4, border:  theme === "dark" ? "1px solid #374151" : "1px solid #d1d5db", padding: 6, borderRadius: 4 }}>
  <button
@@ -1685,23 +1803,49 @@ console.log(vineData);
                 </td>
 
                 {/* SUNDAY WEEKS - DROPDOWNS (ONLINE/ONSITE) */}
-                {sundayWeeks.map((wk) => (
-                  <td key={wk} style={{ textAlign: "center", padding: 8}} data-label={wk}>
-                    <select
-                      value={editBuffer[m.id]?.[wk] ?? m[wk] ?? ""}
-                      onChange={(e) => updateBuffer(m.id, wk, e.target.value)}
-                      style={{ 
-                        padding: "4px 6px", 
-                        borderRadius: 4, 
-                        minWidth: 80
-                      }}
-                    >
-                      <option value="">--</option>
-                      <option value="ONLINE">ONLINE</option>
-                      <option value="ONSITE">ONSITE</option>
-                    </select>
-                  </td>
-                ))}
+                {sundayWeeks.map((wk) => {
+  const attendanceValue =
+    editBuffer[m.id]?.[wk] ?? m[wk] ?? "";
+
+  return (
+    <td
+      key={wk}
+      style={{
+        textAlign: "center",
+        padding: 8,
+      }}
+    >
+      <select
+        value={attendanceValue}
+        onChange={(e) =>
+          updateBuffer(m.id, wk, e.target.value)
+        }
+        style={{
+          padding: "4px 6px",
+          borderRadius: 4,
+          minWidth: 90,
+          fontWeight: "bold",
+
+          backgroundColor:
+            attendanceValue === "ONLINE"
+              ? "#2563eb" // blue
+              : attendanceValue === "ONSITE"
+              ? "#16a34a" // green
+              : "",
+
+          color:
+            attendanceValue
+              ? "white"
+              : "inherit",
+        }}
+      >
+        <option value="">--</option>
+        <option value="ONLINE">ONLINE</option>
+        <option value="ONSITE">ONSITE</option>
+      </select>
+    </td>
+  );
+})}
 
                  {/* CAREGROUP WEEKS - CHECKBOXES */}
                 {careGroupWeeks.map((wk) => (
