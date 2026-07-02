@@ -8,7 +8,7 @@ import { generateCentralMonthlyReport } from "./report/monthlyReport";
 import { generateVineYearlyReport } from "./report/yearlyReport";
 import { getSelectedWeekSunday } from "./report/weeklyReport";
 import LoadingSpinner from "./ui/LoadingSpinner";
-import StatsChart from "./report/statsChart";
+import StatsChart from "./report/StatsChart";
 
 const headerStyle = {
   position: "sticky",
