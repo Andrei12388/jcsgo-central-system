@@ -14,6 +14,16 @@ const YOUNG_MEN_VINES = [76, 120, 167];
 const MEN_VINES = [1230];
 const WOMEN_VINES = [1236, 1255, 1283];
 
+const YOUNG_WOMEN_CLUSTER = []
+const YOUNG_MEN_CLUSTER = []
+const MEN_CLUSTER = []
+const WOMEN_CLUSTER = []
+
+const YOUNG_wOMEN_CARE = []
+const YOUNG_MEN_CARE = []
+const MEN_CARE = []
+const WOMEN_CARE = []
+
   // =========================
   // HELPERS
   // =========================
@@ -322,7 +332,7 @@ const totalOnline = members.reduce((total, member) => {
   vineWk3,
   vineWk4,
   vineWk5,
-  vineCount,
+  countActiveVineServantLeaders(),
   vineAverage,
   "",
 ],

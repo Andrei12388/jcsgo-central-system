@@ -686,7 +686,6 @@ const showVineAttendance = (vineId) => {
 
 //
 
-
   return (
     <div className="vine-attendance" style={{ padding: 12,  borderRadius: 8 }}>
       
@@ -850,7 +849,7 @@ const showVineAttendance = (vineId) => {
           display: "flex",
           justifyContent: "end",
           alignItems: "center",
-          marginBottom: 20,
+          marginBottom: 0,
         }}
       >
         <button
@@ -864,6 +863,14 @@ const showVineAttendance = (vineId) => {
           ✕
         </button>
         </div>
+        <div className="text-center">
+  <p style={{color: "var(--sidebar-active)"}} className="text-4xl font-extrabold">
+    {allData.filter(attendedThisMonth).length}
+  </p>
+  <p className="text-md text-foreground">
+    Total Attendees for the month of {selectedMonth}
+  </p>
+</div>
 <StatsChart
   type="bar"
   title={`Monthly Attendance (${selectedMonth})`}
