@@ -39,7 +39,16 @@ export default function VineAttendancePage() {
   return (
     <div style={{ padding: 16, width: "100%" }}>
     
-       <div style={{ display: 'flex', flexDirection: "column", gap: 16 }}>
+       <div
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    height: "100%", 
+    gap: 16,
+    
+  }}
+>
         <div
         style={{
           
@@ -65,7 +74,7 @@ export default function VineAttendancePage() {
           
         </div>
       </div>
-      <div style={{display: "flex", flexDirection: 'row', justifyItems: 'center', alignItems: 'center'}}>
+      <div style={{display: "flex",justifyContent: "center", height: "100%", flexDirection: 'row', justifyItems: 'center', alignItems: 'center'}}>
           <div style={{ padding: 20, borderRadius: 12, border: '1px solid var(--border)' }}>
             <h2 style={{ marginTop: 0 }}><strong>Attendance</strong></h2>
             <p style={{ margin: 0,  }}>

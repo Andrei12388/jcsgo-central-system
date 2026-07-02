@@ -228,7 +228,7 @@ function SidebarShell(){
   <User size={16} />
   <div className="flex flex-col md:max-w-[10em] leading-none items-start max-w-[5em]">
   <p className="font-bold truncate max-w-full m-0">
-    Robert Andrei Bardoquillo
+    JCSGO_CENTRAL
   </p>
 
   <p className="text-xs opacity-85 truncate max-w-full m-0">

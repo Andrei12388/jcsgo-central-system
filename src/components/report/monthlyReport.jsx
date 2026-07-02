@@ -109,6 +109,50 @@ const totalSundayAttendance = members.filter((m) =>
 const countByVineCategory = (vineIds) =>
   members.filter((m) => vineIds.includes(Number(m.v_id))).length;
 
+
+//count active vine servant leaders
+const countActiveVineServantLeaders = () => {
+  const activeVines = new Set();
+
+  members.forEach((m) => {
+    const hasAttendance = weekFields.some((week) => {
+      const value = String(m[week] || "").toUpperCase();
+      return value.includes("ONSITE") || value.includes("ONLINE");
+    });
+
+    if (hasAttendance) {
+      activeVines.add(Number(m.v_id));
+    }
+  });
+
+  return activeVines.size;
+};
+
+//count per week vine attendance
+const countActiveVinesPerWeek = (week) => {
+  const activeVines = new Set();
+
+  members.forEach((m) => {
+    const value = String(m[week] || "").toUpperCase();
+
+    if (value.includes("ONSITE") || value.includes("ONLINE")) {
+      activeVines.add(Number(m.v_id));
+    }
+  });
+
+  return activeVines.size;
+};
+
+const vineWk1 = countActiveVinesPerWeek("WEEK1");
+const vineWk2 = countActiveVinesPerWeek("WEEK2");
+const vineWk3 = countActiveVinesPerWeek("WEEK3");
+const vineWk4 = countActiveVinesPerWeek("WEEK4");
+const vineWk5 = countActiveVinesPerWeek("WEEK5");
+
+const vineTotal = vineWk1 + vineWk2 + vineWk3 + vineWk4 + vineWk5;
+const vineCount = [vineWk1, vineWk2, vineWk3, vineWk4, vineWk5].filter(v => v > 0).length;
+const vineAverage = vineCount ? (vineTotal / vineCount).toFixed(1) : 0;
+
   // Sunday Attendance
 /*
   const weekFields = ["WEEK1", "WEEK2", "WEEK3", "WEEK4", "WEEK5"];
@@ -148,13 +192,13 @@ const totalOnline = members.reduce((total, member) => {
   });
 
   doc.setFontSize(12);
-  doc.text("CENTRAL PM REPORT", 105, 22, {
+  doc.text("CENTRAL 3PM REPORT", 105, 22, {
     align: "center",
   });
 
   doc.setFontSize(10);
-  doc.text(`Vine: ${getVineName()}`, 14, 32);
-  doc.text(`Month: ${selectedMonth}`, 14, 38);
+  //doc.text(`Vine: ${getVineName()}`, 14, 32);
+  doc.text(`Month: ${selectedMonth}`, 14, 32);
   doc.text(`Date Exported: ${new Date().toLocaleDateString()}`, 145, 32);
 
   // =========================
@@ -252,11 +296,13 @@ const totalOnline = members.reduce((total, member) => {
 ],
       [
   "Power Filled Life",
- "","",""
+  "-","-",
+  sumTimer("POWER_FILLED"),
 ],
       [
   "Water Baptism",
-  "","",""
+  "-","-",
+  sumTimer("WATER_BAPTISM"),
 ],
     ],
     theme: "grid",
@@ -267,15 +313,25 @@ const totalOnline = members.reduce((total, member) => {
   // =========================
   autoTable(doc, {
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["III. Integration & Mobilization", "Onsite", "Online", "TOTAL"]],
+    head: [["III. Integration & Mobilization","Wk1","Wk2","Wk3","Wk4","Wk5", "Count", "Average", "TOTAL"]],
     body: [
-      ["Vine Servant Leaders", "", "", ""],
+      [
+  "Vine Servant Leaders",
+  vineWk1,
+  vineWk2,
+  vineWk3,
+  vineWk4,
+  vineWk5,
+  vineCount,
+  vineAverage,
+  "",
+],
       ["Cluster Servant Leaders", "", "", ""],
       ["Care Leaders / Group", "", "", ""],
-      ["Active Leadership/Groups for the week/month", "", "", ""],
+      ["Active Leaders/Groups for the week/month", "", "", ""],
       ["Total Active Disciples for the week/month", "", "", ""],
       ["",],
-      ["FIELD",],
+      ["",],
       ["Hayo/Evangelism", "", "", ""],
       ["Light House", "", "", ""],
       ["Field Care Group", "", "", ""],
@@ -292,7 +348,7 @@ const totalOnline = members.reduce((total, member) => {
   // =========================
   autoTable(doc, {
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["IV. Other Ministries", "Onsite", "Online", "TOTAL"]],
+    head: [["IV. Other Ministries","Wk1","Wk2","Wk3","Wk4","Wk5", "Count", "Average", "TOTAL"]],
     body: [
       ["Children's Church", "", "", ""],
       ["Barangay/Field Outreach", "", "", ""],

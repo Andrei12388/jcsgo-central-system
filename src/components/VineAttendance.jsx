@@ -77,6 +77,7 @@ const MINISTRY_OPTIONS = ['Music', 'Dance', 'Program', 'MultiMedia']
 
 // VineAttendance
 const [showForm, setShowForm] = useState(false)
+const [showGraph, setShowGraph] = useState(true)
 const [showQueryModal, setShowQueryModal] = useState(false);
  const [members, setMembers] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
@@ -705,7 +706,164 @@ const showVineAttendance = (vineId) => {
        */}
       <div className="vine-attendance__header">
 
+         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyItems: "center", gap: 4, border:  theme === "dark" ? "1px solid #374151" : "1px solid #d1d5db", padding: 6, borderRadius: 4 }}>
+ 
+ <button
+  onClick={() =>
+    generateVineWeeklyReport({
+      members,
+      selectedVine,
+      vines,
+      weekColumns,
+      selectedMonth,
+      selectedWeek,
+      notify,
+    })
+  }
+  disabled={!selectedVine || members.length === 0}
+  style={{
+    background: "#071141",
+    color: "#fff",
+    padding: "8px 14px",
+    borderRadius: 6,
+    cursor: !selectedVine ? "not-allowed" : "pointer",
+    marginLeft: 8,
+  }}
+>
+  Generate Weekly Report
+</button>
+<select
+  value={selectedWeek}
+  onChange={(e) => setSelectedWeek(e.target.value)}
+  style={{ padding: "6px", borderRadius: 4, maxWidth: 200, marginLeft: 8 }}
+>
+  <option value="WEEK1">{reportDateW1}</option>
+  <option value="WEEK2">{reportDateW2}</option>
+  <option value="WEEK3">{reportDateW3}</option>
+  <option value="WEEK4">{reportDateW4}</option>
+  <option value="WEEK5">{reportDateW5}</option>
+</select>
+</div>
+     <button
+     disabled={allData.length === 0 || vines.length === 0}
+  
+  onClick={() =>
+    generateCentralMonthlyReport({
+      allData,   // 🔥 IMPORTANT: not members
+      vines,
+      selectedMonth,
+    })
+  }
+>
+  Generate Central Monthly Report
+</button>
 
+      
+<button
+  onClick={async () => {
+    try {
+      setYearlyLoading(true);
+
+      await generateVineYearlyReport({
+        webAppUrl,
+        vines,
+      });
+
+      notify?.success("Yearly report generated");
+    } catch (err) {
+      console.error(err);
+      notify?.error("Failed to generate yearly report");
+    } finally {
+      setYearlyLoading(false);
+    }
+  }}
+  disabled={yearlyLoading || loading}
+  style={{
+    background: yearlyLoading ? "#555" : "#0f766e",
+    color: "#fff",
+    padding: "8px 14px",
+    borderRadius: 6,
+    cursor:
+       yearlyLoading ? "not-allowed" : "pointer",
+    marginLeft: 8,
+  }}
+>
+  {yearlyLoading ? "Generating Yearly Report..." : "Generate Yearly Report"}
+</button>
+
+          <button
+  onClick={() => setShowQueryModal(true)}
+  style={{
+    padding: "10px 20px",
+    fontWeight: "bold",
+    marginLeft: 10,
+  }}
+>
+  Open Member Queue
+</button>
+
+ <button
+  onClick={() => setShowGraph(!showGraph)}
+  style={{
+    padding: "10px 20px",
+    fontWeight: "bold",
+    marginLeft: 10,
+  }}
+>
+  {showGraph ? "Hide Graph" : "Show Graph"}
+</button>
+      </div>
+       
+{showGraph && (
+
+<div
+    onClick={() => setShowGraph(false)}
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 9990,
+    }}
+  >
+    <div
+      className="animationCard"
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        background: "var(--card)",
+        color: "var(--foreground)",
+        padding: 0,
+        
+        width: "min(1200px, 100vw)",
+        maxHeight: "90vh",
+        overflow: "auto",
+        gap: 20,
+        borderRadius: 10,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+       <div
+        style={{
+          display: "flex",
+          justifyContent: "end",
+          alignItems: "center",
+          marginBottom: 20,
+        }}
+      >
+        <button
+          onClick={() => setShowGraph(false)}
+          style={{
+            fontSize: 18,
+            padding: "6px 12px",
+            cursor: "pointer",
+          }}
+        >
+          ✕
+        </button>
+        </div>
 <StatsChart
   type="bar"
   title={`Monthly Attendance (${selectedMonth})`}
@@ -729,6 +887,9 @@ const showVineAttendance = (vineId) => {
   showVineAttendance(vine.id);
 }}
 />  
+</div>
+</div>
+)}
 
 {selectedVineAttendance && (
   <div
@@ -879,142 +1040,7 @@ const showVineAttendance = (vineId) => {
   </div>
 )}
       
-     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyItems: "center", gap: 4, border:  theme === "dark" ? "1px solid #374151" : "1px solid #d1d5db", padding: 6, borderRadius: 4 }}>
- <button
-  onClick={() =>
-    generateVineWeeklyReport({
-      members,
-      selectedVine,
-      vines,
-      weekColumns,
-      selectedMonth,
-      selectedWeek,
-      notify,
-    })
-  }
-  disabled={!selectedVine || members.length === 0}
-  style={{
-    background: "#071141",
-    color: "#fff",
-    padding: "8px 14px",
-    borderRadius: 6,
-    cursor: !selectedVine ? "not-allowed" : "pointer",
-    marginLeft: 8,
-  }}
->
-  Generate Weekly Report
-</button>
-<select
-  value={selectedWeek}
-  onChange={(e) => setSelectedWeek(e.target.value)}
-  style={{ padding: "6px", borderRadius: 4, maxWidth: 200, marginLeft: 8 }}
->
-  <option value="WEEK1">{reportDateW1}</option>
-  <option value="WEEK2">{reportDateW2}</option>
-  <option value="WEEK3">{reportDateW3}</option>
-  <option value="WEEK4">{reportDateW4}</option>
-  <option value="WEEK5">{reportDateW5}</option>
-</select>
-</div>
-     <button
-  onClick={() =>
-    generateCentralMonthlyReport({
-      allData,   // 🔥 IMPORTANT: not members
-      vines,
-      selectedMonth,
-    })
-  }
->
-  Generate Central Monthly Report
-</button>
-
-      
-<button
-  onClick={async () => {
-    try {
-      setYearlyLoading(true);
-
-      await generateVineYearlyReport({
-        webAppUrl,
-        vines,
-      });
-
-      notify?.success("Yearly report generated");
-    } catch (err) {
-      console.error(err);
-      notify?.error("Failed to generate yearly report");
-    } finally {
-      setYearlyLoading(false);
-    }
-  }}
-  disabled={yearlyLoading || loading}
-  style={{
-    background: yearlyLoading ? "#555" : "#0f766e",
-    color: "#fff",
-    padding: "8px 14px",
-    borderRadius: 6,
-    cursor:
-       yearlyLoading ? "not-allowed" : "pointer",
-    marginLeft: 8,
-  }}
->
-  {yearlyLoading ? "Generating Yearly Report..." : "Generate Yearly Report"}
-</button>
-
-          <button
-  onClick={() => setShowQueryModal(true)}
-  style={{
-    padding: "10px 20px",
-    fontWeight: "bold",
-    marginLeft: 10,
-  }}
->
-  Open Member Queue
-</button>
-      </div>
-       
-
-      {/* MONTH BUTTONS */}
-      <div className="vine-attendance__month-buttons" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-        {MONTHS.map((month) => (
-          <button
-            key={month}
-            type="button"
-            onClick={() => {
-              setSelectedMonth(month);
-              setSelectedVine("");
-              setMembers([]);
-              setWeekColumns([]);
-              setEditBuffer({});
-            }}
-            style={{
-              padding: "6px 10px",
-              borderRadius: 4,
-              border: month === selectedMonth ? "2px solid #2563eb" : "1px solid #d1d5db",
-             
-              cursor: "pointer"
-            }}
-          >
-            {month}
-          </button>
-        ))}
-      </div>
-  <div style={{ display: 'flex',  flexWrap: 'wrap', borderBottom: '10px solid var(--border)', marginBottom: 20, paddingBottom: 10, gap: 12 }}>
-        </div>
-      {/* CONTROLS */}
-      <div className="vine-attendance__controls" style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-        <select value={selectedVine} onChange={handleSelect} disabled={loading}>
-          <option value="">
-            {loading ? "-- Loading vines --" : "-- Select Vine --"}
-          </option>
-          {vines.map((v) => (
-            <option key={v.id} value={v.id}>
-              {v.name} (ID: {v.id})
-            </option>
-          ))}
-        </select>
-        
-      </div>
+    
 
       {/* LOADING SPINNER */}
       {loading && (
@@ -1405,11 +1431,61 @@ const showVineAttendance = (vineId) => {
   </div>
 )}
 
+  <div style={{ display: 'flex',  flexWrap: 'wrap', borderBottom: '10px solid var(--foreground)', marginBottom: 20, paddingBottom: 10, gap: 12 }}>
+        </div>
+        <p><strong>Select Month</strong></p>
+ {/* MONTH DROPDOWN */}
+<div style={{ marginTop:8, }} className="vine-attendance__month-dropdown mb-3">
+  <select
+    value={selectedMonth}
+    onChange={(e) => {
+      const month = e.target.value;
+      setSelectedMonth(month);
+      setSelectedVine("");
+      setMembers([]);
+      setWeekColumns([]);
+      setEditBuffer({});
+    }}
+    className="
+      px-3 py-2 text-sm rounded-lg border
+      bg-white dark:bg-zinc-900
+      border-gray-300 dark:border-zinc-700
+      text-gray-700 dark:text-gray-200
+      shadow-sm
+      focus:outline-none focus:ring-2 focus:ring-blue-500
+      cursor-pointer
+    "
+  >
+    {MONTHS.map((month) => (
+      <option key={month} value={month}>
+        {month}
+      </option>
+    ))}
+  </select>
+</div>
+<p><strong>Select Vine</strong></p>
+ <div className="vine-attendance__controls" style={{ display: "flex", gap: 8,marginTop:8, marginBottom: 12, flexWrap: "wrap" }}>
+        <select value={selectedVine} onChange={handleSelect} disabled={loading}>
+          <option value="">
+            {loading ? "-- Loading vines --" : "-- Select Vine --"}
+          </option>
+          {vines.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.name} (ID: {v.id})
+            </option>
+          ))}
+        </select>
+        
+      </div>
+  <div style={{ display: 'flex',  flexWrap: 'wrap', borderBottom: '10px solid var(--foreground)', marginBottom: 20, paddingBottom: 10, gap: 12 }}>
+        </div>
+      {/* CONTROLS */}
       
       {/* ADD MEMBER FORM */}
       {selectedVine && members.length > 0 && !loading &&(
         <div style={{ 
           marginBottom: 16, 
+          marginTop: 16,
           padding: 12, 
           border: "2px solid var(--border)",
           borderRadius: 4,
@@ -1463,6 +1539,8 @@ const showVineAttendance = (vineId) => {
           </div>
         </div>
       )}
+
+      
       <div
   style={{
     display: "flex",
@@ -1495,6 +1573,7 @@ const showVineAttendance = (vineId) => {
     style={{
       padding: "6px 10px",
       borderRadius: 4,
+      marginTop: 10,
       border: "1px solid green",
       minWidth: 220,
       maxWidth: "30%",
