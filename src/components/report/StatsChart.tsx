@@ -41,6 +41,7 @@ export default function StatsChart({
 }: StatsChartProps) {
   const chartData = labels.map((label, index) => ({
     name: label,
+    index: index,
     value: data[index] ?? 0,
   }))
 
@@ -50,7 +51,7 @@ export default function StatsChart({
     <div className="w-full rounded-xl border bg-background p-6 shadow-sm">
       <h2 className="mb-6 text-lg font-semibold">{title}</h2>
 
-      <div className="h-[350px]">
+      <div className="h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
           {type === "pie" ? (
             <PieChart>
@@ -73,7 +74,7 @@ export default function StatsChart({
               <Legend />
             </PieChart>
           ) : (
-            <BarChart data={chartData}>
+            <BarChart data={chartData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
 
               <XAxis dataKey="name" />
@@ -86,23 +87,27 @@ export default function StatsChart({
 
              <Bar
   dataKey="value"
-  onClick={(data, index) => {
-    console.log("clicked");
-    console.log(data);
-    console.log(index);
-
-    onBarClick?.(
-      index,
-      data.payload.name,
-      data.payload.value
-    );
+  radius={[6, 6, 0, 0]}
+  label={{
+    y: -10,
+    position: "top",
+    fill: "var(--text)",
+    fontSize: 12,
+    fontWeight: "bold",
   }}
 >
-  {chartData.map((_, index) => (
+  {chartData.map((entry, index) => (
     <Cell
       key={index}
       fill={COLORS[index % COLORS.length]}
       cursor="pointer"
+      onClick={() =>
+        onBarClick?.(
+          entry.index,
+          entry.name,
+          entry.value
+        )
+      }
     />
   ))}
 </Bar>
