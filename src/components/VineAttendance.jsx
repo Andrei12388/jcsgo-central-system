@@ -577,8 +577,105 @@ const paginatedMembers = filteredMembers.slice(
 
 console.log(members)
 
+// for graphs
+
+const YOUNG_WOMEN_VINES = [1, 23, 244, 140];
+const YOUNG_MEN_VINES = [76, 120, 167];
+const MEN_VINES = [1230];
+const WOMEN_VINES = [1236, 1255, 1283];
+
+const weekFields = [
+  "WEEK1",
+  "WEEK2",
+  "WEEK3",
+  "WEEK4",
+  "WEEK5",
+];
+
+const attendedThisMonth = (member) =>
+  weekFields.some((week) => {
+    const value = String(member[week] || "").trim().toUpperCase();
+
+    return value.includes("ONLINE") || value.includes("ONSITE");
+  });
+
+const attendanceLabels = [
+  "YOUNG MEN",
+  "YOUNG WOMEN",
+  "MEN",
+  "WOMEN",
+];
+
+const attendanceData = [
+  allData.filter(
+    (m) =>
+      YOUNG_MEN_VINES.includes(Number(m.v_id)) &&
+      attendedThisMonth(m)
+  ).length,
+
+  allData.filter(
+    (m) =>
+      YOUNG_WOMEN_VINES.includes(Number(m.v_id)) &&
+      attendedThisMonth(m)
+  ).length,
+
+  allData.filter(
+    (m) =>
+      MEN_VINES.includes(Number(m.v_id)) &&
+      attendedThisMonth(m)
+  ).length,
+
+  allData.filter(
+    (m) =>
+      WOMEN_VINES.includes(Number(m.v_id)) &&
+      attendedThisMonth(m)
+  ).length,
+];
+
+//per vines graph
+const [selectedVineAttendance, setSelectedVineAttendance] = useState(null);
+const vineAttendance = vines.map((vine) => ({
+  id: vine.id,
+  name: vine.name,
+  value: allData.filter(
+    (m) =>
+      String(m.v_id) === String(vine.id) &&
+      attendedThisMonth(m)
+  ).length,
+}));
+
+const vineLabels = vineAttendance.map((v) => v.name);
+const vineData = vineAttendance.map((v) => v.value);
+
+
+
+const showVineAttendance = (vineId) => {
+  console.log("Clicked vine:", vineId);
+
+  const attendees = allData.filter((m) => {
+    if (String(m.v_id) !== String(vineId)) return false;
+    return attendedThisMonth(m);
+  });
+
+  console.log(attendees);
+
+  const vine = vines.find((v) => String(v.id) === String(vineId));
+
+  setSelectedVineAttendance({
+    vine,
+    attendees,
+  });
+};
+
+//
+
+console.log(vineLabels);
+console.log(vineData);
+
+
   return (
     <div className="vine-attendance" style={{ padding: 12,  borderRadius: 8 }}>
+      
       {saving && (
         <div className="action-toast">
           <div className="spinner" />
@@ -595,17 +692,82 @@ console.log(members)
        */}
       <div className="vine-attendance__header">
 
-        <StatsChart
-      title="Members by Ministry"
-      labels={[
-        "Music",
-        "Media",
-        "Usher",
-        "Youth",
-        "Kids",
-      ]}
-      data={[24, 15, 18, 31, 10]}
-    />
+
+<StatsChart
+  type="bar"
+  title={`Monthly Attendance (${selectedMonth})`}
+  labels={attendanceLabels}
+  data={attendanceData}
+/>
+
+<StatsChart
+  type="bar"
+  title={`Monthly Attendance Per Vine (${selectedMonth})`}
+  labels={vineLabels}
+  data={vineData}
+  onBarClick={(index) => {
+  console.log(index);
+  console.log(vineAttendance[index]);
+
+  const vine = vineAttendance[index];
+
+  if (!vine) return;
+
+  showVineAttendance(vine.id);
+}}
+/>
+
+{selectedVineAttendance && (
+  <div >
+    <div >
+
+      <h2>{selectedVineAttendance.vine.name}</h2>
+
+      <p>
+        Total Attendance: {selectedVineAttendance.attendees.length}
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Week</th>
+            <th>Attendance</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {selectedVineAttendance.attendees.map((m, index) => {
+
+            const week = weekFields.find((w) =>
+              String(m[w] || "").toUpperCase().includes("ONLINE") ||
+              String(m[w] || "").toUpperCase().includes("ONSITE")
+            );
+
+            return (
+              <tr key={m.id}>
+                <td>{index + 1}</td>
+                <td>
+                  {m.first_name} {m.last_name}
+                </td>
+                <td>{week}</td>
+                <td>{m[week]}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      <button
+        onClick={() => setSelectedVineAttendance(null)}
+      >
+        Close
+      </button>
+
+    </div>
+  </div>
+)}
        
       
      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyItems: "center", gap: 4, border:  theme === "dark" ? "1px solid #374151" : "1px solid #d1d5db", padding: 6, borderRadius: 4 }}>
