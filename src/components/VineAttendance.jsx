@@ -873,16 +873,7 @@ const showVineAttendance = (vineId) => {
           justifyContent: "flex-end",
         }}
       >
-        <button
-          onClick={() => setSelectedVineAttendance(null)}
-          style={{
-            padding: "10px 18px",
-            borderRadius: 6,
-            cursor: "pointer",
-          }}
-        >
-          Close
-        </button>
+        
       </div>
     </div>
   </div>
