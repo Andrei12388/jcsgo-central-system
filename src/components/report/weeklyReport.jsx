@@ -115,6 +115,18 @@ const sumTimerAttendance = (field, attendance) =>
       selectedWeek.toUpperCase()
   ).length;
 
+  const countTypeAttendance = (type, attendance) =>
+  members.filter((m) => {
+    const memberType =
+      String(m.type || "").trim().toLowerCase() || "disciple";
+
+    const attended = String(m[selectedWeek] || "")
+      .toUpperCase()
+      .includes(attendance.toUpperCase());
+
+    return memberType === type.toLowerCase() && attended;
+  }).length;
+
 
   // =========================
   // HEADER
@@ -207,43 +219,54 @@ addSection("2. New Friends", [
   // =========================
   // 3. CARE ACTIVITY
   // =========================
- const countType = (type) =>
-  members.filter(
-    (m) =>
-      String(m.type || "").toLowerCase() ===
-      type.toLowerCase()
-  ).length;
+const countType = (type) =>
+  members.filter((m) => {
+    const memberType =
+      String(m.type || "").trim().toLowerCase() || "disciple";
+
+    return memberType === type.toLowerCase();
+  }).length;
 
 addSection("3. CARE Activity", [
-  ["Cluster Servants", "", "", countType("cluster")],
-  ["CARE Leaders", "", "", countType("careleader")],
-  ["CARE Disciples", "", "", countType("disciple")],
+  [
+    "Cluster Servants",
+    countTypeAttendance("cluster", "ONSITE"),
+    countTypeAttendance("cluster", "ONLINE"),
+    countTypeAttendance("cluster", "ONSITE") + countTypeAttendance("cluster", "ONLINE"),
+  ],
+  [
+    "CARE Leaders",
+    countTypeAttendance("careleader", "ONSITE"),
+    countTypeAttendance("careleader", "ONLINE"),
+    countTypeAttendance("careleader", "ONSITE") + countTypeAttendance("careleader", "ONLINE"),
+  ],
+  [
+    "CARE Disciples",
+    countTypeAttendance("disciple", "ONSITE"),
+    countTypeAttendance("disciple", "ONLINE"),
+    countTypeAttendance("disciple", "ONSITE") + countTypeAttendance("disciple", "ONLINE"),
+  ],
 ]);
 
   // =========================
   // 4. HAYO / EVANGELISM
   // =========================
   addSection("4. Other Activities", [
-    ["Hayo/Evangelism", "", "", sumWeekField("HAYO")],
-    ["Prayer", "", "", sumWeekField("PRAYER")],
-    ["Follow-up", "", "", sumWeekField("FOLLOWUP")],
-    ["Reactivation", "", "", sumWeekField("REACTIVATION")],
-    ["Field Care Group", "", "", sumWeekField("FIELD_CARE")],
-    ["Field Disciple", "", "", sumWeekField("FIELD_CARE")],
-    
+    ["Hayo/Evangelism", "", "", ""],
+    ["Prayer", "", "", ""],
+    ["Follow-up", "", "", ""],
+    ["Reactivation", "", "", ""],
+    ["Field Care Group", "", "", ""],
+    ["Field Disciple", "", "", ""]
   ]);
 
   // =========================
   // 5. Outreach
   // =========================
- addSection("4. Other Activities", [
-  ["Hayo/Evangelism", "", "", sumWeekField("HAYO")],
-  ["Prayer", "", "", sumWeekField("PRAYER")],
-  ["Follow-up", "", "", sumWeekField("FOLLOWUP")],
-  ["Reactivation", "", "", sumWeekField("REACTIVATION")],
-  ["Field Care Group", "", "", sumWeekField("FIELD_CARE")],
-  ["Field Disciple", "", "", sumWeekField("FIELD_DISCIPLES")],
-]);
+  addSection("5. Outreach", [
+    ["Outreach Group", "", "", ""],
+    ["Outreach Disciples", "", "", ""],
+  ]);
 
     // =========================
     // FOOTER

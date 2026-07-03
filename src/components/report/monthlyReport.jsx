@@ -158,6 +158,10 @@ const vineWk3 = countActiveVinesPerWeek("WEEK3");
 const vineWk4 = countActiveVinesPerWeek("WEEK4");
 const vineWk5 = countActiveVinesPerWeek("WEEK5");
 
+const registeredVineLeaders = members.filter(
+  (m) =>
+    String(m.type || "").toLowerCase() === "vine"
+).length;
 const vineTotal = vineWk1 + vineWk2 + vineWk3 + vineWk4 + vineWk5;
 const vineCount = [vineWk1, vineWk2, vineWk3, vineWk4, vineWk5].filter(v => v > 0).length;
 const vineAverage = vineCount ? (vineTotal / vineCount).toFixed(1) : 0;
@@ -182,7 +186,7 @@ const totalClusterLeaders = members.filter(
 
 const totalCareLeaders = members.filter(
   (m) =>
-    String(m.type || "").toLowerCase() === "care"
+    String(m.type || "").toLowerCase() === "careleader"
 ).length;
 
 const totalRegisteredClusters = members.filter(
@@ -194,7 +198,7 @@ const totalRegisteredClusters = members.filter(
 const totalRegisteredCareLeaders = members.filter(
   (m) =>
     m.is_reg &&
-    String(m.type || "").toLowerCase() === "care"
+    String(m.type || "").toLowerCase() === "careleader"
 ).length;
 
 //active unique count
@@ -452,7 +456,7 @@ const totalOnline = members.reduce((total, member) => {
     head: [["III. Integration & Mobilization","Wk1","Wk2","Wk3","Wk4","Wk5", "Count", "Average", "TOTAL"]],
     body: [
       [
-  `Vine Servant Leaders (${vineTotal})`,
+  `Vine Servant Leaders (${registeredVineLeaders})`,
   vineWk1,
   vineWk2,
   vineWk3,
