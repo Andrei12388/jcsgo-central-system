@@ -292,6 +292,54 @@ const careAverage =
     ? (careTotal / careCount).toFixed(1)
     : 0;
 
+//active disciples count
+ const countTypeAttendance = (type, week, attendance) =>
+  members.filter((m) => {
+    const memberType =
+      String(m.type || "").trim().toLowerCase() || "disciple";
+
+    const attended = String(m[week] || "")
+      .toUpperCase()
+      .includes(attendance.toUpperCase());
+
+    return memberType === type.toLowerCase() && attended;
+  }).length;
+
+const countType = (type, week) =>
+  members.filter((m) => {
+    const memberType =
+      String(m.type || "").trim().toLowerCase() || "disciple";
+
+    const value = String(m[week] || "").toUpperCase();
+
+    return (
+      memberType === type.toLowerCase() &&
+      (value.includes("ONSITE") || value.includes("ONLINE"))
+    );
+  }).length;
+
+const discipleWk1 = countType("disciple", "WEEK1");
+const discipleWk2 = countType("disciple", "WEEK2");
+const discipleWk3 = countType("disciple", "WEEK3");
+const discipleWk4 = countType("disciple", "WEEK4");
+const discipleWk5 = countType("disciple", "WEEK5");
+
+const discipleTotal =
+  discipleWk1 +
+  discipleWk2 +
+  discipleWk3 +
+  discipleWk4 +
+  discipleWk5;
+
+const discipleCount =
+  [discipleWk1, discipleWk2, discipleWk3, discipleWk4, discipleWk5]
+    .filter((v) => v > 0).length;
+
+const discipleAverage =
+  discipleCount
+    ? (discipleTotal / discipleCount).toFixed(1)
+    : 0;
+
   // Sunday Attendance
 /*
   const weekFields = ["WEEK1", "WEEK2", "WEEK3", "WEEK4", "WEEK5"];
@@ -489,7 +537,15 @@ const totalOnline = members.reduce((total, member) => {
   "",
 ],
       ["Active Leaders/Groups for the week/month", "", "", ""],
-      ["Total Active Disciples for the week/month", "", "", ""],
+      ["Total Active Disciples for the week/month", 
+        discipleWk1,
+    discipleWk2,
+    discipleWk3,
+    discipleWk4,
+    discipleWk5,
+    discipleCount,
+    discipleAverage, 
+    ""],
       ["",],
       ["",],
       ["Hayo/Evangelism", "", "", ""],
