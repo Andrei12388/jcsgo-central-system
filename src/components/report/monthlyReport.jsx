@@ -448,7 +448,7 @@ const totalOnline = members.reduce((total, member) => {
   vineWk3,
   vineWk4,
   vineWk5,
-  countActiveVineServantLeaders(),
+  countActiveVinesPerWeek(),
   vineAverage,
   "",
 ],

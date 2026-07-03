@@ -172,9 +172,36 @@ function getAllMembers(month) {
 }
 
 function getYearlyData() {
+
   const result = {};
 
+  const masterSheet = SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getSheetByName("MASTERLIST");
+
+  const masterHeaders = getHeaders(masterSheet);
+
+  const masterRows = masterSheet
+    .getRange(3, 1, masterSheet.getLastRow() - 2, masterSheet.getLastColumn())
+    .getValues();
+
+  // Build lookup by member id
+  const masterMap = {};
+
+  masterRows.forEach(row => {
+
+    const obj = {};
+
+    masterHeaders.forEach((header, i) => {
+      obj[header] = row[i];
+    });
+
+    masterMap[String(obj.id)] = obj;
+
+  });
+
   MONTHS.forEach(month => {
+
     const sheet = getSheet(month);
 
     if (!sheet) {
@@ -182,22 +209,32 @@ function getYearlyData() {
       return;
     }
 
-    const lastRow = sheet.getLastRow();
-    const lastCol = sheet.getLastColumn();
-
     const headers = getHeaders(sheet);
 
-    const rows = sheet.getRange(3, 1, lastRow - 2, lastCol).getValues();
+    const rows = sheet
+      .getRange(3, 1, sheet.getLastRow() - 2, sheet.getLastColumn())
+      .getValues();
 
     result[month] = rows.map(row => {
-      let obj = {};
 
-      headers.forEach((header, index) => {
-        obj[header] = row[index];
+      const obj = {};
+
+      headers.forEach((header, i) => {
+        obj[header] = row[i];
       });
 
+      // Merge MASTERLIST fields
+      const master = masterMap[String(obj.id)];
+
+      if (master) {
+        obj.is_reg = master.is_reg;
+        obj.type = master.type;
+      }
+
       return obj;
+
     });
+
   });
 
   return result;
