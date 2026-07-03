@@ -123,23 +123,49 @@ function isCheckbox(header) {
  */
 function getAllMembers(month) {
 
-  const sheet = getSheet(month);
+  const monthSheet = getSheet(month);
 
-  const lastRow = sheet.getLastRow();
-  const lastCol = sheet.getLastColumn();
+  const monthHeaders = getHeaders(monthSheet);
+  const monthRows = monthSheet
+    .getRange(3, 1, monthSheet.getLastRow() - 2, monthSheet.getLastColumn())
+    .getValues();
 
-  // Row 2 = headers
-  const headers = getHeaders(sheet);
+  const masterSheet = SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getSheetByName("MASTERLIST");
 
-  // Row 3+ = data
-  const rows = sheet.getRange(3, 1, lastRow - 2, lastCol).getValues();
+  const masterHeaders = getHeaders(masterSheet);
+  const masterRows = masterSheet
+    .getRange(3, 1, masterSheet.getLastRow() - 2, masterSheet.getLastColumn())
+    .getValues();
 
-  return rows.map(row => {
-    let obj = {};
+  // Create lookup by id
+  const masterMap = {};
 
-    headers.forEach((header, index) => {
-      obj[header] = row[index];
+  masterRows.forEach(row => {
+    const obj = {};
+
+    masterHeaders.forEach((header, i) => {
+      obj[header] = row[i];
     });
+
+    masterMap[String(obj.id)] = obj;
+  });
+
+  return monthRows.map(row => {
+
+    const obj = {};
+
+    monthHeaders.forEach((header, i) => {
+      obj[header] = row[i];
+    });
+
+    const master = masterMap[String(obj.id)];
+
+    if (master) {
+      obj.is_reg = master.is_reg;
+      obj.type = master.type;
+    }
 
     return obj;
   });
@@ -386,21 +412,37 @@ function batchEdit(updates, month) {
 
       if (String(masterValues[i][0]) === String(rowId)) {
 
-        ["first_name", "last_name"].forEach(field => {
+        [
+  "first_name",
+  "last_name",
+  "is_reg",
+  "type"
+].forEach(field => {
 
-          if (data[field] !== undefined) {
+  if (data[field] !== undefined) {
 
-            const col = masterHeaders.indexOf(field);
+    const col = masterHeaders.indexOf(field);
 
-            if (col !== -1) {
-              masterSheet
-                .getRange(i + 1, col + 1)
-                .setValue(data[field]);
-            }
+    if (col !== -1) {
 
-          }
+      let value = data[field];
 
-        });
+      if (field === "is_reg") {
+        value = Boolean(value);
+      }
+
+      if (field === "type") {
+        value = String(value).trim();
+      }
+
+      masterSheet
+        .getRange(i + 1, col + 1)
+        .setValue(value);
+    }
+
+  }
+
+});
 
         break;
       }

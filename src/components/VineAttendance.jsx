@@ -77,7 +77,7 @@ const MINISTRY_OPTIONS = ['Music', 'Dance', 'Program', 'MultiMedia']
 
 // VineAttendance
 const [showForm, setShowForm] = useState(false)
-const [showGraph, setShowGraph] = useState(true)
+const [showGraph, setShowGraph] = useState(false)
 const [showQueryModal, setShowQueryModal] = useState(false);
  const [members, setMembers] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
@@ -1728,6 +1728,7 @@ const showVineAttendance = (vineId) => {
                     Status
                   </th>
                 )}
+
                 <th
                   style={{
                     padding: 8,
@@ -1738,8 +1739,9 @@ const showVineAttendance = (vineId) => {
                     
                   }}
                 >
-                  Action
+                  
                 </th>
+                
               </tr>
               <tr>
                 <th
@@ -1842,7 +1844,32 @@ const showVineAttendance = (vineId) => {
                   </th>
                 ))}
 
-                <th
+                
+
+                 <th
+  style={{
+    padding: 8,
+    textAlign: "center",
+    position: "sticky",
+    top: 28,
+    zIndex: 2,
+  }}
+>
+  Registered
+</th>
+
+<th
+  style={{
+    padding: 8,
+    textAlign: "center",
+    position: "sticky",
+    top: 28,
+    zIndex: 2,
+  }}
+>
+  Type of Leader
+</th>
+<th
                   style={{
                     padding: 8,
                     position: "sticky",
@@ -1851,7 +1878,7 @@ const showVineAttendance = (vineId) => {
                    
                    
                   }}
-                ></th>
+                >Action</th>
               </tr>
             </thead>
 
@@ -2004,7 +2031,41 @@ const showVineAttendance = (vineId) => {
   </td>
 ))}
 
-                {/* DELETE BUTTON */}
+             
+                
+    <td style={{ textAlign: "center", padding: 8 }}>
+  <input
+    type="checkbox"
+    checked={
+      editBuffer[m.id]?.is_reg !== undefined
+        ? editBuffer[m.id].is_reg
+        : isChecked(m.is_reg)
+    }
+    onChange={(e) =>
+      updateBuffer(m.id, "is_reg", e.target.checked)
+    }
+  />
+</td>
+
+<td style={{ padding: 8 }}>
+  <select
+    value={editBuffer[m.id]?.type ?? m.type ?? ""}
+    onChange={(e) =>
+      updateBuffer(m.id, "type", e.target.value)
+    }
+    style={{
+      width: "100%",
+      padding: "6px",
+      borderRadius: 4,
+    }}
+  >
+    <option value="">--</option>
+    <option value="cluster">Cluster</option>
+    <option value="careleader">Care Leader</option>
+  </select>
+</td>
+
+   {/* DELETE BUTTON */}
                 <td style={{ textAlign: "center", padding: 8, }}>
                   <button
                     onClick={() => deleteMember(m.id, `${m.first_name} ${m.last_name}`)}
