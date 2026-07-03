@@ -69,35 +69,52 @@ export const generateVineWeeklyReport = ({
     return vine?.name || `Vine #${selectedVine || "Unknown"}`;
   };
 
-const sumAttendance = (field, attendance) =>
-  members.filter((m) => {
-    const isSelectedWeek =
-      String(m[field] || "").toUpperCase() ===
-      selectedWeek.toUpperCase();
-
-    const attended =
-      String(m[selectedWeek] || "")
-        .toUpperCase()
-        .includes(attendance.toUpperCase());
-
-    return isSelectedWeek && attended;
-  }).length;
-
-const sum = (field) =>
-  members.filter((m) => {
-    return (
-      String(m[field] || "").toUpperCase() ===
-      selectedWeek.toUpperCase()
-    );
-  }).length;
-
 const getWeekValue = (m, keyword) => {
   return String(m[selectedWeek] || "")
     .toUpperCase()
     .includes(keyword);
 };
 
+
+ // =========================
+// TIMER HELPERS
+// =========================
+
+// Returns true if the member attended onsite/online during the selected week
+const attendedThisWeek = (member, attendance) =>
+  String(member[selectedWeek] || "")
+    .toUpperCase()
+    .includes(attendance.toUpperCase());
+
+// Total members that reached the timer during the selected week
+const normalize = (value) =>
+  String(value || "").trim().toUpperCase();
+
+const sumTimer = (field) =>
+  members.filter(
+    (m) => normalize(m[field]) === normalize(selectedWeek)
+  ).length;
+
+const sumTimerAttendance = (field, attendance) =>
+  members.filter((m) => {
+    const isTimer =
+      normalize(m[field]) === normalize(selectedWeek);
+
+    const attended =
+      normalize(m[selectedWeek]).includes(attendance.toUpperCase());
+
+    return isTimer && attended;
+  }).length;
+
   const reportDate = getSelectedWeekSunday(selectedMonth, selectedWeek);
+
+  const sumWeekField = (field) =>
+  members.filter(
+    (m) =>
+      String(m[field] || "").toUpperCase() ===
+      selectedWeek.toUpperCase()
+  ).length;
+
 
   // =========================
   // HEADER
@@ -150,68 +167,83 @@ const online = members.filter((m) =>
   // =========================
   // 2. NEW FRIENDS
   // =========================
-  addSection("2. New Friends", [
+  // =========================
+// 2. NEW FRIENDS
+// =========================
+addSection("2. New Friends", [
   [
     "1st Timers",
-    sumAttendance("1ST_TIMER", "ONSITE"),
-    sumAttendance("1ST_TIMER", "ONLINE"),
-    sum("1ST_TIMER"),
+    sumTimerAttendance("1ST_TIMER", "ONSITE"),
+    sumTimerAttendance("1ST_TIMER", "ONLINE"),
+    sumTimer("1ST_TIMER"),
   ],
   [
     "2nd Timers",
-    sumAttendance("2ND_TIMER", "ONSITE"),
-    sumAttendance("2ND_TIMER", "ONLINE"),
-    sum("2ND_TIMER"),
+    sumTimerAttendance("2ND_TIMER", "ONSITE"),
+    sumTimerAttendance("2ND_TIMER", "ONLINE"),
+    sumTimer("2ND_TIMER"),
   ],
   [
     "3rd Timers",
-    sumAttendance("3RD_TIMER", "ONSITE"),
-    sumAttendance("3RD_TIMER", "ONLINE"),
-    sum("3RD_TIMER"),
+    sumTimerAttendance("3RD_TIMER", "ONSITE"),
+    sumTimerAttendance("3RD_TIMER", "ONLINE"),
+    sumTimer("3RD_TIMER"),
   ],
   [
     "4th Timers",
-    sumAttendance("4TH_TIMER", "ONSITE"),
-    sumAttendance("4TH_TIMER", "ONLINE"),
-    sum("4TH_TIMER"),
+    sumTimerAttendance("4TH_TIMER", "ONSITE"),
+    sumTimerAttendance("4TH_TIMER", "ONLINE"),
+    sumTimer("4TH_TIMER"),
   ],
   [
     "5th Timers",
-    sumAttendance("5TH_TIMER", "ONSITE"),
-    sumAttendance("5TH_TIMER", "ONLINE"),
-    sum("5TH_TIMER"),
+    sumTimerAttendance("5TH_TIMER", "ONSITE"),
+    sumTimerAttendance("5TH_TIMER", "ONLINE"),
+    sumTimer("5TH_TIMER"),
   ],
+
 ]);
 
   // =========================
   // 3. CARE ACTIVITY
   // =========================
-  addSection("3. CARE Activity", [
-    ["No. of Cluster Servants", "", "", sum("CLUSTER_SERVANT")],
-    ["No. of CARE Leaders", "", "", sum("CARE_GROUP_LEADER")],
-    ["No. of CARE Disciples", "", "", members.length],
-  ]);
+ const countType = (type) =>
+  members.filter(
+    (m) =>
+      String(m.type || "").toLowerCase() ===
+      type.toLowerCase()
+  ).length;
+
+addSection("3. CARE Activity", [
+  ["Cluster Servants", "", "", countType("cluster")],
+  ["CARE Leaders", "", "", countType("careleader")],
+  ["CARE Disciples", "", "", countType("disciple")],
+]);
 
   // =========================
   // 4. HAYO / EVANGELISM
   // =========================
   addSection("4. Other Activities", [
-    ["Hayo/Evangelism", "", "", sum("HAYO")],
-    ["Prayer", "", "", sum("PRAYER")],
-    ["Follow-up", "", "", sum("FOLLOWUP")],
-    ["Reactivation", "", "", sum("REACTIVATION")],
-    ["Field Care Group", "", "", sum("FIELD_CARE")],
-    ["Field Disciple", "", "", sum("FIELD_CARE")],
+    ["Hayo/Evangelism", "", "", sumWeekField("HAYO")],
+    ["Prayer", "", "", sumWeekField("PRAYER")],
+    ["Follow-up", "", "", sumWeekField("FOLLOWUP")],
+    ["Reactivation", "", "", sumWeekField("REACTIVATION")],
+    ["Field Care Group", "", "", sumWeekField("FIELD_CARE")],
+    ["Field Disciple", "", "", sumWeekField("FIELD_CARE")],
     
   ]);
 
   // =========================
   // 5. Outreach
   // =========================
-  addSection("5. Outreach", [
-    ["Outreach Group", "", "", sum("OUTREACH_GROUP")],
-    ["Outreach Disciples", "", "", sum("OUTREACH_DISCIPLES")],
-  ]);
+ addSection("4. Other Activities", [
+  ["Hayo/Evangelism", "", "", sumWeekField("HAYO")],
+  ["Prayer", "", "", sumWeekField("PRAYER")],
+  ["Follow-up", "", "", sumWeekField("FOLLOWUP")],
+  ["Reactivation", "", "", sumWeekField("REACTIVATION")],
+  ["Field Care Group", "", "", sumWeekField("FIELD_CARE")],
+  ["Field Disciple", "", "", sumWeekField("FIELD_DISCIPLES")],
+]);
 
     // =========================
     // FOOTER

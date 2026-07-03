@@ -707,6 +707,22 @@ const showVineAttendance = (vineId) => {
 
 //
 
+  console.log("Selected Week:", selectedWeek);
+console.log("Members:", members);
+
+console.table(
+  members.map(m => ({
+    name: `${m.first_name} ${m.last_name}`,
+    vine: m.v_id,
+    timer: m["1ST_TIMER"],
+    week: m[selectedWeek],
+  }))
+);
+
+console.log(
+  members.find(m => m.first_name === "JAY-EL")
+);
+
   return (
     <div className="vine-attendance" style={{ padding: 12,  borderRadius: 8 }}>
       
@@ -2060,6 +2076,7 @@ const showVineAttendance = (vineId) => {
     }}
   >
     <option value="">--</option>
+    <option value="vine">Vine Leader</option>
     <option value="cluster">Cluster Leader</option>
     <option value="careleader">Care Leader</option>
   </select>

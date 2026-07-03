@@ -115,12 +115,15 @@ const countActiveVineServantLeaders = () => {
   const activeVines = new Set();
 
   members.forEach((m) => {
-    const hasAttendance = weekFields.some((week) => {
+    const isVineLeader =
+      String(m.type || "").toLowerCase() === "vine";
+
+    const attended = weekFields.some((week) => {
       const value = String(m[week] || "").toUpperCase();
       return value.includes("ONSITE") || value.includes("ONLINE");
     });
 
-    if (hasAttendance) {
+    if (isVineLeader && attended) {
       activeVines.add(Number(m.v_id));
     }
   });
@@ -133,9 +136,15 @@ const countActiveVinesPerWeek = (week) => {
   const activeVines = new Set();
 
   members.forEach((m) => {
+    const isVineLeader =
+      String(m.type || "").toLowerCase() === "vine";
+
     const value = String(m[week] || "").toUpperCase();
 
-    if (value.includes("ONSITE") || value.includes("ONLINE")) {
+    if (
+      isVineLeader &&
+      (value.includes("ONSITE") || value.includes("ONLINE"))
+    ) {
       activeVines.add(Number(m.v_id));
     }
   });
@@ -309,6 +318,7 @@ const totalOnline = members.reduce((total, member) => {
 
 */
 
+
   // =========================
   // TITLE (UNCHANGED STYLE)
   // =========================
@@ -442,18 +452,18 @@ const totalOnline = members.reduce((total, member) => {
     head: [["III. Integration & Mobilization","Wk1","Wk2","Wk3","Wk4","Wk5", "Count", "Average", "TOTAL"]],
     body: [
       [
-  "Vine Servant Leaders",
+  `Vine Servant Leaders (${vineTotal})`,
   vineWk1,
   vineWk2,
   vineWk3,
   vineWk4,
   vineWk5,
-  countActiveVinesPerWeek(),
+  countActiveVineServantLeaders(),
   vineAverage,
   "",
 ],
       [
-  "Cluster Servant Leaders",
+  `Cluster Servant Leaders (${totalClusterLeaders})`,
   clusterWk1,
   clusterWk2,
   clusterWk3,
@@ -464,7 +474,7 @@ const totalOnline = members.reduce((total, member) => {
   "",
 ],
 [
-  "Care Leaders / Group",
+  `Care Leaders / Group (${totalCareLeaders})`,
   careWk1,
   careWk2,
   careWk3,
@@ -515,6 +525,7 @@ const totalOnline = members.reduce((total, member) => {
     ],
     theme: "plain",
   });
+
 
  //export pdf
   const blob = doc.output("blob");
