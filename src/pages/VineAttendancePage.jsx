@@ -5,7 +5,7 @@ import { useNotification } from "../components/notificationToast";
 import VineAttendance from "../components/VineAttendance";
 
 const VINE_API_URL =
-    "https://script.google.com/macros/s/AKfycbzrGPP_ajLR7WIa2NwJ8qBHqxTeXRbfFFIQ9E96vQvzWEgyRsbNJQEgT0kkY6At4jO3/exec";
+    "https://script.google.com/macros/s/AKfycbwDycM3nwxOF5X0Bfv8E9ZLc36r-9L_y6I7iE0srKZny2-ac2vJZbm0vbZufxAVju1_/exec";
 
 export default function VineAttendancePage() {
 

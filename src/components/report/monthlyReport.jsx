@@ -14,16 +14,6 @@ const YOUNG_MEN_VINES = [76, 120, 167];
 const MEN_VINES = [1230];
 const WOMEN_VINES = [1236, 1255, 1283];
 
-const YOUNG_WOMEN_CLUSTER = []
-const YOUNG_MEN_CLUSTER = []
-const MEN_CLUSTER = []
-const WOMEN_CLUSTER = []
-
-const YOUNG_wOMEN_CARE = []
-const YOUNG_MEN_CARE = []
-const MEN_CARE = []
-const WOMEN_CARE = []
-
   // =========================
   // HELPERS
   // =========================
@@ -162,6 +152,132 @@ const vineWk5 = countActiveVinesPerWeek("WEEK5");
 const vineTotal = vineWk1 + vineWk2 + vineWk3 + vineWk4 + vineWk5;
 const vineCount = [vineWk1, vineWk2, vineWk3, vineWk4, vineWk5].filter(v => v > 0).length;
 const vineAverage = vineCount ? (vineTotal / vineCount).toFixed(1) : 0;
+
+//Count cluster/careleader
+// =========================
+// CLUSTER / CARE LEADER COUNTS
+// =========================
+
+const uniqueCount = (field) => {
+  return new Set(
+    members
+      .map((m) => String(m[field] || "").trim())
+      .filter((v) => v !== "")
+  ).size;
+};
+
+const totalClusterLeaders = members.filter(
+  (m) =>
+    String(m.type || "").toLowerCase() === "cluster"
+).length;
+
+const totalCareLeaders = members.filter(
+  (m) =>
+    String(m.type || "").toLowerCase() === "care"
+).length;
+
+const totalRegisteredClusters = members.filter(
+  (m) =>
+    m.is_reg &&
+    String(m.type || "").toLowerCase() === "cluster"
+).length;
+
+const totalRegisteredCareLeaders = members.filter(
+  (m) =>
+    m.is_reg &&
+    String(m.type || "").toLowerCase() === "care"
+).length;
+
+//active unique count
+
+const countActiveLeaders = (type) => {
+  return members.filter((m) => {
+    const attended = weekFields.some((week) => {
+      const value = String(m[week] || "").toUpperCase();
+      return value.includes("ONLINE") || value.includes("ONSITE");
+    });
+
+    return (
+      attended &&
+      String(m.type || "").toLowerCase() === type.toLowerCase()
+    );
+  }).length;
+};
+
+const activeClusterLeaders = countActiveLeaders("cluster");
+const activeCareLeaders = countActiveLeaders("care");
+const activeVineLeaders = countActiveLeaders("vine");
+
+
+//Count active leaders per week
+// Count active Cluster Leaders per week
+const countActiveClustersPerWeek = (week) => {
+  return members.filter((m) => {
+    const value = String(m[week] || "").toUpperCase();
+
+    return (
+      String(m.type || "").toLowerCase() === "cluster" &&
+      (value.includes("ONSITE") || value.includes("ONLINE"))
+    );
+  }).length;
+};
+
+const clusterWk1 = countActiveClustersPerWeek("WEEK1");
+const clusterWk2 = countActiveClustersPerWeek("WEEK2");
+const clusterWk3 = countActiveClustersPerWeek("WEEK3");
+const clusterWk4 = countActiveClustersPerWeek("WEEK4");
+const clusterWk5 = countActiveClustersPerWeek("WEEK5");
+
+const clusterTotal =
+  clusterWk1 +
+  clusterWk2 +
+  clusterWk3 +
+  clusterWk4 +
+  clusterWk5;
+
+const clusterCount =
+  [clusterWk1, clusterWk2, clusterWk3, clusterWk4, clusterWk5]
+    .filter((v) => v > 0).length;
+
+const clusterAverage =
+  clusterCount
+    ? (clusterTotal / clusterCount).toFixed(1)
+    : 0;
+
+
+// Count active Care Leaders per week
+const countActiveCareLeadersPerWeek = (week) => {
+  return members.filter((m) => {
+    const value = String(m[week] || "").toUpperCase();
+
+    return (
+      String(m.type || "").toLowerCase() === "careleader" &&
+      (value.includes("ONSITE") || value.includes("ONLINE"))
+    );
+  }).length;
+};
+
+const careWk1 = countActiveCareLeadersPerWeek("WEEK1");
+const careWk2 = countActiveCareLeadersPerWeek("WEEK2");
+const careWk3 = countActiveCareLeadersPerWeek("WEEK3");
+const careWk4 = countActiveCareLeadersPerWeek("WEEK4");
+const careWk5 = countActiveCareLeadersPerWeek("WEEK5");
+
+const careTotal =
+  careWk1 +
+  careWk2 +
+  careWk3 +
+  careWk4 +
+  careWk5;
+
+const careCount =
+  [careWk1, careWk2, careWk3, careWk4, careWk5]
+    .filter((v) => v > 0).length;
+
+const careAverage =
+  careCount
+    ? (careTotal / careCount).toFixed(1)
+    : 0;
 
   // Sunday Attendance
 /*
@@ -336,8 +452,28 @@ const totalOnline = members.reduce((total, member) => {
   vineAverage,
   "",
 ],
-      ["Cluster Servant Leaders", "", "", ""],
-      ["Care Leaders / Group", "", "", ""],
+      [
+  "Cluster Servant Leaders",
+  clusterWk1,
+  clusterWk2,
+  clusterWk3,
+  clusterWk4,
+  clusterWk5,
+  countActiveClustersPerWeek(),
+  clusterAverage,
+  "",
+],
+[
+  "Care Leaders / Group",
+  careWk1,
+  careWk2,
+  careWk3,
+  careWk4,
+  careWk5,
+  countActiveCareLeadersPerWeek(),
+  careAverage,
+  "",
+],
       ["Active Leaders/Groups for the week/month", "", "", ""],
       ["Total Active Disciples for the week/month", "", "", ""],
       ["",],

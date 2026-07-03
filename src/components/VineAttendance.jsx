@@ -613,7 +613,7 @@ const paginatedMembers = filteredMembers.slice(
   currentPage * ITEMS_PER_PAGE
 );
 
-console.log(members)
+console.log(allData)
 
 // for graphs
 
@@ -2060,7 +2060,7 @@ const showVineAttendance = (vineId) => {
     }}
   >
     <option value="">--</option>
-    <option value="cluster">Cluster</option>
+    <option value="cluster">Cluster Leader</option>
     <option value="careleader">Care Leader</option>
   </select>
 </td>

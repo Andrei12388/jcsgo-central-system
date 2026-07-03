@@ -38,6 +38,7 @@ export const generateVineYearlyReport = async ({
   };
 
   const yearData = await fetchYearlyData();
+  console.log("Yearly Data:", yearData.JANUARY[0]);
 
   const vineMap = new Map();
 
@@ -54,12 +55,13 @@ export const generateVineYearlyReport = async ({
       const group = vineMap.get(vineId);
 
       if (!group.has(r.id)) {
-        group.set(r.id, {
-          id: r.id,
-          first_name: r.first_name,
-          last_name: r.last_name,
-          v_id: r.v_id,
-        });
+       group.set(r.id, {
+  id: r.id,
+  first_name: r.first_name,
+  last_name: r.last_name,
+  v_id: r.v_id,
+  is_reg: isChecked(r.is_reg),
+});
       }
     });
   });
@@ -159,6 +161,23 @@ export const generateVineYearlyReport = async ({
         fillColor: [15, 118, 110],
         textColor: 255,
       },
+
+      didParseCell: (data) => {
+  // Skip TOTAL row
+  if (data.section !== "body") return;
+  if (data.row.index >= members.length) return;
+
+  // MEMBER column only
+  if (data.column.index === 0) {
+    const member = members[data.row.index];
+
+    if (member?.is_reg) {
+      data.cell.styles.fillColor = [34, 197, 94]; // Green
+      data.cell.styles.textColor = [255, 255, 255]; // White text
+      data.cell.styles.fontStyle = "bold";
+    }
+  }
+},
 
       didDrawCell: (data) => {
         const isCheck = checkCells.some(
