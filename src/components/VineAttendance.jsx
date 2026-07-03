@@ -707,21 +707,27 @@ const showVineAttendance = (vineId) => {
 
 //
 
-  console.log("Selected Week:", selectedWeek);
-console.log("Members:", members);
+  //console.log("Selected Week:", selectedWeek);
+//console.log("Members:", members);
 
-console.table(
-  members.map(m => ({
-    name: `${m.first_name} ${m.last_name}`,
-    vine: m.v_id,
-    timer: m["1ST_TIMER"],
-    week: m[selectedWeek],
-  }))
-);
+const getLeaderColor = (type) => {
+  switch (String(type).trim().toLowerCase()) {
+    case "vine":
+      return "#2563eb"; // Blue
 
-console.log(
-  members.find(m => m.first_name === "JAY-EL")
-);
+    case "cluster":
+      return "orange"; // Red
+
+    case "caregroup":
+    case "careleader":
+      return "#16a34a"; // Green
+
+    default:
+      return "transparent";
+  }
+};
+
+
 
   return (
     <div className="vine-attendance" style={{ padding: 12,  borderRadius: 8 }}>
@@ -835,7 +841,7 @@ console.log(
     marginLeft: 10,
   }}
 >
-  Open Member Queue
+  Open Registration Queue
 </button>
 
  <button
@@ -1124,7 +1130,7 @@ console.log(
           marginBottom: 15,
         }}
       >
-        <h2 style={{ margin: 0, fontWeight: 'bold' }}>Member Queue</h2>
+        <h2 style={{ margin: 0, fontWeight: 'bold' }}>Registration Queue</h2>
        
 
         <button onClick={() => setShowQueryModal(false)}>
@@ -1132,7 +1138,7 @@ console.log(
         </button>
       </div>
        <button disabled={!selectedVine || members.length === 0} onClick={() => { resetForm(); setShowForm(true) }} style={{ padding: '10px 20px', cursor: !selectedVine ? "not-allowed" : "pointer", fontWeight: 'bold', marginBottom: 8 }} >
-            Add Member Details on System Queue
+            Add Member Details on List
           </button>
 
       <input
@@ -1899,15 +1905,19 @@ console.log(
             </thead>
 
           <tbody>
-            {paginatedMembers.map((m) => (
-              <tr
-                key={m.id}
-               
-              >
-                <td style={{ padding: 8,
+            {paginatedMembers.map((m) => {
+              const borderColor = getLeaderColor(m.type);
+
+              return (
+                <tr
+                  key={m.id}
+                 
+                >
+                  <td style={{ padding: 8,
                 left: -10,
                    background: theme === "dark" ? "#111827" : "#fff",
                     color: theme === "dark" ? "#f8fafc" : "#111",
+                    
                     borderBottom: theme === "dark" ? "1px solid #374151" : "1px solid #d1d5db"
                  }} data-label="ID">{m.id}</td>
 
@@ -1921,6 +1931,7 @@ console.log(
                       width: "100%",
                       minWidth: 160,
                       padding: "6px 8px",
+                       borderLeft: `4px solid ${borderColor}`,
                       borderRadius: 4,
                       boxSizing: "border-box"
                     }}
@@ -2101,7 +2112,7 @@ console.log(
                   </button>
                 </td>
               </tr>
-            ))}
+            )})}
           </tbody>
           
         </table>
