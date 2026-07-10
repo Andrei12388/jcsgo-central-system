@@ -128,6 +128,27 @@ const sumTimerAttendance = (field, attendance) =>
   }).length;
 
 
+  //Last Section Report
+  const vineLeader = members.find(
+  (m) => String(m.type || "").trim().toLowerCase() === "vine"
+);
+
+const getWeekNumber = (week) =>
+  Number(String(week).replace("WEEK", ""));
+
+const selectedWeekNo = getWeekNumber(selectedWeek);
+
+const getActivityCount = (prefix) => {
+  if (!vineLeader) return 0;
+
+  return Number(
+    vineLeader[`${prefix}${selectedWeekNo}`] || 0
+  );
+};
+
+getActivityCount("WEEK_EW")
+
+
   // =========================
   // HEADER
   // =========================
@@ -251,22 +272,62 @@ addSection("3. CARE Activity", [
   // =========================
   // 4. HAYO / EVANGELISM
   // =========================
-  addSection("4. Other Activities", [
-    ["Hayo/Evangelism", "", "", ""],
-    ["Prayer", "", "", ""],
-    ["Follow-up", "", "", ""],
-    ["Reactivation", "", "", ""],
-    ["Field Care Group", "", "", ""],
-    ["Field Disciple", "", "", ""]
-  ]);
+ addSection("4. Other Activities", [
+  [
+    "HAYO / Evangelism",
+    "",
+    "",
+    getActivityCount("WEEK_EW"),
+  ],
+  [
+    "Lighthouse",
+    "",
+    "",
+    getActivityCount("WEEK_LH"),
+  ],
+  [
+    "Field Caregroup",
+    "",
+    "",
+    getActivityCount("WEEK_FCG"),
+  ],
+  [
+    "Field Care Disciples",
+    "",
+    "",
+    getActivityCount("WEEK_FCD"),
+  ],
+  [
+    "Follow Up",
+    "",
+    "",
+    getActivityCount("WEEK_FU"),
+  ],
+  [
+    "Reactivation",
+    "",
+    "",
+    getActivityCount("WEEK_R"),
+  ],
+]);
 
   // =========================
   // 5. Outreach
   // =========================
   addSection("5. Outreach", [
-    ["Outreach Group", "", "", ""],
-    ["Outreach Disciples", "", "", ""],
-  ]);
+  [
+    "Outreach Group",
+    "",
+    "",
+    getActivityCount("WEEK_OG"),
+  ],
+  [
+    "Outreach Disciples",
+    "",
+    "",
+    getActivityCount("WEEK_OD"),
+  ],
+]);
 
     // =========================
     // FOOTER

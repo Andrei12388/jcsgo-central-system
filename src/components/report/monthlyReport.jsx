@@ -60,6 +60,47 @@ const WOMEN_VINES = [1236, 1255, 1283,1360];
   //Unique Sunday attendance
   const weekFields = ["WEEK1", "WEEK2", "WEEK3", "WEEK4", "WEEK5"];
 
+  const activityPrefixes = {
+  EW: "WEEK_EW",
+  LH: "WEEK_LH",
+  FCG: "WEEK_FCG",
+  FCD: "WEEK_FCD",
+  FU: "WEEK_FU",
+  R: "WEEK_R",
+  OG: "WEEK_OG", // if you have these
+  OD: "WEEK_OD", // if you have these
+};
+
+const sumActivityWeek = (prefix, weekNo) =>
+  members
+    .filter(
+      (m) => String(m.type || "").trim().toLowerCase() === "vine"
+    )
+    .reduce((sum, vine) => {
+      return sum + Number(vine[`${prefix}${weekNo}`] || 0);
+    }, 0);
+
+const activityStats = (prefix) => {
+  const weeks = [1, 2, 3, 4, 5].map((w) =>
+    sumActivityWeek(prefix, w)
+  );
+
+  const total = weeks.reduce((a, b) => a + b, 0);
+
+  const count = weeks.filter((v) => v > 0).length;
+
+  const average = count
+    ? (total / count).toFixed(1)
+    : 0;
+
+  return {
+    weeks,
+    count,
+    average,
+    total,
+  };
+};
+
 const totalOnsite = members.filter((m) =>
   weekFields.some((week) =>
     String(m[week] || "").toUpperCase().includes("ONSITE")
@@ -496,6 +537,19 @@ const totalOnline = members.reduce((total, member) => {
     theme: "grid",
   });
 
+  //section 3 computations
+  const evangelism = activityStats("WEEK_EW");
+const lighthouse = activityStats("WEEK_LH");
+const fieldCareGroup = activityStats("WEEK_FCG");
+const fieldCareDisciple = activityStats("WEEK_FCD");
+const followUp = activityStats("WEEK_FU");
+const reactivation = activityStats("WEEK_R");
+
+// Optional
+const childrenGroup = activityStats("WEEK_CC");
+const outreachGroup = activityStats("WEEK_OG");
+const outreachDisciple = activityStats("WEEK_OD");
+
   // =========================
   // SECTION III
   // =========================
@@ -548,13 +602,48 @@ const totalOnline = members.reduce((total, member) => {
     ""],
       ["",],
       ["",],
-      ["Hayo/Evangelism", "", "", ""],
-      ["Light House", "", "", ""],
-      ["Field Care Group", "", "", ""],
-      ["Field Care Disciples", "", "", ""],
-      ["",],
-      ["Follow-Up", "", "", ""],
-      ["Reactivation", "", "", ""],
+      [
+  "HAYO / Evangelism",
+  ...evangelism.weeks,
+  evangelism.count,
+  evangelism.average,
+  evangelism.total,
+],
+[
+  "Lighthouse",
+  ...lighthouse.weeks,
+  lighthouse.count,
+  lighthouse.average,
+  lighthouse.total,
+],
+[
+  "Field Care Group",
+  ...fieldCareGroup.weeks,
+  fieldCareGroup.count,
+  fieldCareGroup.average,
+  fieldCareGroup.total,
+],
+[
+  "Field Care Disciples",
+  ...fieldCareDisciple.weeks,
+  fieldCareDisciple.count,
+  fieldCareDisciple.average,
+  fieldCareDisciple.total,
+],
+[
+  "Follow Up",
+  ...followUp.weeks,
+  followUp.count,
+  followUp.average,
+  followUp.total,
+],
+[
+  "Reactivation",
+  ...reactivation.weeks,
+  reactivation.count,
+  reactivation.average,
+  reactivation.total,
+],
     ],
     theme: "grid",
   });
@@ -566,9 +655,27 @@ const totalOnline = members.reduce((total, member) => {
     startY: doc.lastAutoTable.finalY + 10,
     head: [["IV. Other Ministries","Wk1","Wk2","Wk3","Wk4","Wk5", "Count", "Average", "TOTAL"]],
     body: [
-      ["Children's Church", "", "", ""],
-      ["Barangay/Field Outreach", "", "", ""],
-      ["Outreach Disciples", "", "", ""],
+      [
+  "Children Church",
+  ...childrenGroup.weeks,
+  childrenGroup.count,
+  childrenGroup.average,
+  childrenGroup.total,
+],
+     [
+  "Outreach Group",
+  ...outreachGroup.weeks,
+  outreachGroup.count,
+  outreachGroup.average,
+  outreachGroup.total,
+],
+[
+  "Outreach Disciples",
+  ...outreachDisciple.weeks,
+  outreachDisciple.count,
+  outreachDisciple.average,
+  outreachDisciple.total,
+],
     ],
     theme: "grid",
   });
