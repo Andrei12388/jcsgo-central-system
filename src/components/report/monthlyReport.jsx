@@ -11,8 +11,8 @@ export const generateCentralMonthlyReport = async ({
 
 const YOUNG_WOMEN_VINES = [1, 23, 244, 140];
 const YOUNG_MEN_VINES = [76, 120, 167];
-const MEN_VINES = [1230];
-const WOMEN_VINES = [1236, 1255, 1283];
+const MEN_VINES = [1230,1361];
+const WOMEN_VINES = [1236, 1255, 1283,1360];
 
   // =========================
   // HELPERS
