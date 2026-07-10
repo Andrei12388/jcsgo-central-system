@@ -354,6 +354,30 @@ const getDiff = (id, updates) => {
   const careGroupWeeks = weekColumns.filter((wk) => /^WEEK_/i.test(wk));
   const sundayWeeks = weekColumns.filter((wk) => /^WEEK\d+$/i.test(wk));
 
+  //hayo weeks
+  const hayoEvangelismWeeks = weekColumns.filter((wk) => /^WEEK_EW/i.test(wk));
+  //light house
+  const lightHouseWeeks = weekColumns.filter((wk) => /^WEEK_LH/i.test(wk));
+  //field caregroup
+  const field_cgWeeks = weekColumns.filter((wk) => /^WEEK_FCG/i.test(wk));
+  //field care disciples
+  const field_cdWeeks = weekColumns.filter((wk) => /^WEEK_FCD/i.test(wk));
+  //follow up
+  const followUpWeeks = weekColumns.filter((wk) => /^WEEK_FU/i.test(wk));
+  //reactivation
+  const reactivationWeeks = weekColumns.filter((wk) => /^WEEK_R/i.test(wk));
+
+  //children church
+  const childrenChurchWeeks = weekColumns.filter((wk) => /^WEEK_CC/i.test(wk));
+  
+  //barangay outreach
+  const barangayOutreachWeeks = weekColumns.filter((wk) => /^WEEK_BO/i.test(wk));
+
+  //outreach disciple
+  const outreachDiscipleWeeks = weekColumns.filter((wk) => /^WEEK_OD/i.test(wk));
+
+
+
   // =========================
   // 🔥 BUFFER HANDLER
   // =========================
@@ -613,7 +637,7 @@ const paginatedMembers = filteredMembers.slice(
   currentPage * ITEMS_PER_PAGE
 );
 
-console.log(allData)
+console.log("Fetch all Data:",allData)
 
 // for graphs
 
@@ -727,6 +751,48 @@ const getLeaderColor = (type) => {
   }
 };
 
+const vineLeader = members.find(
+  (m) => String(m.type).toLowerCase() === "vine"
+);
+
+const activities = [
+  {
+    label: "HAYO Evangelism",
+    prefix: "WEEK_EW",
+  },
+  {
+    label: "Lighthouse",
+    prefix: "WEEK_LH",
+  },
+  {
+    label: "Field Caregroup",
+    prefix: "WEEK_FCG",
+  },
+  {
+    label: "Field Care Disciples",
+    prefix: "WEEK_FCD",
+  },
+  {
+    label: "Follow Up",
+    prefix: "WEEK_FU",
+  },
+  {
+    label: "Reactivation",
+    prefix: "WEEK_R",
+  },
+  {
+    label: "Children Church",
+    prefix: "WEEK_CC",
+  },
+   {
+    label: "Barangay Outreach",
+    prefix: "WEEK_BO",
+  },
+   {
+    label: "Outreach Disciple",
+    prefix: "WEEK_OD",
+  },
+];
 
 
   return (
@@ -2178,7 +2244,64 @@ const getLeaderColor = (type) => {
   </button>
   <span>
   Page {currentPage} of {totalPages}
-</span>
+  </span>
+</div>
+
+<div style={{display: 'flex', padding: 8, borderRadius: 4, marginTop: 12}}>
+
+ <table className="border-collapse border w-full">
+ <thead>
+  <tr>
+    <th>Activity</th>
+
+    {[1,2,3,4,5].map(i => (
+      <th key={i}>Week {i}</th>
+    ))}
+  </tr>
+  
+</thead>
+
+  <tbody>
+  {vineLeader &&
+    activities.map(({ label, prefix }) => (
+      <tr key={prefix}>
+        <td
+          style={{
+            fontWeight: "bold",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {label}
+        </td>
+
+        {[1,2,3,4,5].map((i) => (
+          <td key={i}>
+            <input
+              type="number"
+              min="0"
+              value={
+                editBuffer[vineLeader.id]?.[`${prefix}${i}`] ??
+                vineLeader[`${prefix}${i}`] ??
+                ""
+              }
+              onChange={(e) =>
+                updateBuffer(
+                  vineLeader.id,
+                  `${prefix}${i}`,
+                  e.target.value
+                )
+              }
+              style={{
+                width: 100,
+                textAlign: "center",
+              }}
+            />
+          </td>
+        ))}
+      </tr>
+    ))}
+</tbody>
+</table>
 </div>
       <div style={{ display: "flex", gap: 8, marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
        <button
