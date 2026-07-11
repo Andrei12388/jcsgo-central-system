@@ -2247,12 +2247,30 @@ const activities = [
   </span>
 </div>
 
-<div style={{display: 'flex', padding: 8, borderRadius: 4, marginTop: 12}}>
+<div style={{display: 'flex', 
+  padding: 8, borderRadius: 4, overflowX: "auto",
+    width: "100%",
+  marginTop: 12}}>
 
- <table className="border-collapse border w-full">
+ <table className="border-collapse border w-full"
+ style={{
+      minWidth: "700px", // adjust as needed
+      borderCollapse: "collapse",
+    }}
+ >
  <thead>
   <tr>
-    <th>Activity</th>
+    <th
+    style={{
+    position: "sticky",
+    left: -15,
+    
+    zIndex: 99999,
+    minWidth: 180,
+    whiteSpace: "nowrap",
+    border: "1px solid #ddd",
+  }}
+    >Activity</th>
 
     {[1,2,3,4,5].map(i => (
       <th key={i}>Week {i}</th>
@@ -2266,13 +2284,19 @@ const activities = [
     activities.map(({ label, prefix }) => (
       <tr key={prefix}>
         <td
-          style={{
-            fontWeight: "bold",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {label}
-        </td>
+  style={{
+    position: "sticky",
+    left: -15,
+    background: "#fff",
+    zIndex: 9999,
+    fontWeight: "bold",
+    minWidth: 180,
+    whiteSpace: "nowrap",
+    border: "1px solid #ddd",
+  }}
+>
+  {label}
+</td>
 
         {[1,2,3,4,5].map((i) => (
           <td key={i}>
