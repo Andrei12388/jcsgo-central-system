@@ -351,7 +351,9 @@ const getDiff = (id, updates) => {
     String(val).toLowerCase() === "yes";
 
   // Separate caregroup weeks from Sunday attendance weeks
-  const careGroupWeeks = weekColumns.filter((wk) => /^WEEK_/i.test(wk));
+ const careGroupWeeks = weekColumns.filter((wk) =>
+  ["WEEK_1", "WEEK_2", "WEEK_3", "WEEK_4", "WEEK_5"].includes(wk)
+);
   const sundayWeeks = weekColumns.filter((wk) => /^WEEK\d+$/i.test(wk));
 
   //hayo weeks
@@ -1818,6 +1820,7 @@ const activities = [
                 )}
 
                 <th
+                colSpan={2}
                   style={{
                     padding: 8,
                     textAlign: "center",
@@ -1827,7 +1830,7 @@ const activities = [
                     
                   }}
                 >
-                  
+                  Member Info
                 </th>
                 
               </tr>
@@ -1888,6 +1891,7 @@ const activities = [
                       fontSize: "12px",
                       position: "sticky",
                       top: 28,
+                     
                       zIndex: 2,
                      
                     }}
