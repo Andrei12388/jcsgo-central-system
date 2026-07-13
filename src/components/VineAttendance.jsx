@@ -2267,9 +2267,9 @@ const activities = [
     <th
     style={{
     position: "sticky",
-    left: -15,
+    left: -8,
     
-    zIndex: 99999,
+    zIndex: 1000,
     minWidth: 180,
     whiteSpace: "nowrap",
     border: "1px solid #ddd",
@@ -2290,9 +2290,9 @@ const activities = [
         <td
   style={{
     position: "sticky",
-    left: -15,
+    left: -8,
     background: "#fff",
-    zIndex: 9999,
+    zIndex: 1000,
     fontWeight: "bold",
     minWidth: 180,
     whiteSpace: "nowrap",
