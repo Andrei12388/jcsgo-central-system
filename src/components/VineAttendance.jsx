@@ -2276,9 +2276,13 @@ const activities = [
   }}
     >Activity</th>
 
-    {[1,2,3,4,5].map(i => (
-      <th key={i}>Week {i}</th>
-    ))}
+   {Object.values(reportDates).map((wk) => (
+                  <th
+                    key={wk}
+                  >
+                    {wk}
+                  </th>
+                ))}
   </tr>
   
 </thead>
