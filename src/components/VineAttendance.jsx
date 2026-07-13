@@ -83,6 +83,7 @@ const [showQueryModal, setShowQueryModal] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
   const [actionLoading, setActionLoading] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 const [form, setForm] = useState({
   last_name: "",
   first_name: "",
@@ -217,7 +218,7 @@ const handleChange = (e) => {
   const [selectedWeek, setSelectedWeek] = useState("WEEK1");
   const [yearlyLoading, setYearlyLoading] = useState(false);
 
-  const ITEMS_PER_PAGE = 10;
+  
 const [currentPage, setCurrentPage] = useState(1);
 const [searchMember, setSearchMember] = useState("");
 
@@ -632,11 +633,11 @@ const filteredMembers = members.filter((member) => {
 });
 
 // PAGINATION
-const totalPages = Math.ceil(filteredMembers.length / ITEMS_PER_PAGE);
+const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
 
 const paginatedMembers = filteredMembers.slice(
-  (currentPage - 1) * ITEMS_PER_PAGE,
-  currentPage * ITEMS_PER_PAGE
+  (currentPage - 1) * itemsPerPage,
+  currentPage * itemsPerPage
 );
 
 console.log("Fetch all Data:",allData)
@@ -1697,6 +1698,8 @@ const activities = [
       maxWidth: "30%",
     }}
   />
+
+
 </div>
       {members.length > 0 && !loading && (
         <div
@@ -2190,17 +2193,57 @@ const activities = [
       
       )}
       {/* PAGINATION */}
+      <div>
+        
+      </div>
 <div
   style={{
     display: "flex",
-    justifyContent: "center",
+    justifyContent: "end",
     alignItems: "center",
+
     gap: 8,
+    
     marginTop: 12,
     padding: 10,
     flexWrap: "wrap"
   }}
 >
+  <div style={{display: 'flex', flexDirection: 'row',justifyItems: 'center', alignItems: "center", gap: 10, marginRight: 10}}>
+    <span
+    style={{
+      textWrap: 'nowrap',
+      lineHeight: 1,
+      fontWeight: 'bold',
+    }}
+  >
+    Members Per Page
+  </span>
+
+  <select
+    value={itemsPerPage}
+    onChange={(e) => {
+      setItemsPerPage(Number(e.target.value));
+      setCurrentPage(1);
+    }}
+    style={{
+      padding: "6px 10px",
+      minWidth: '60px',
+      borderRadius: 4,
+      border: "1px solid green",
+      cursor: "pointer",
+    }}
+  >
+    {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((num) => (
+      <option key={num} value={num}>
+        {num}
+      </option>
+    ))}
+  </select>
+  </div>
+ <span style={{fontWeight: 'bold',}}>
+  Page {currentPage} of {totalPages}
+  </span>
   <button
     onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
     disabled={currentPage === 1}
@@ -2246,9 +2289,7 @@ const activities = [
   >
     Next
   </button>
-  <span>
-  Page {currentPage} of {totalPages}
-  </span>
+ 
 </div>
 
 <div style={{display: 'flex', 
