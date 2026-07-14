@@ -79,6 +79,7 @@ const MINISTRY_OPTIONS = ['Music', 'Dance', 'Program', 'MultiMedia']
 // VineAttendance
 const [showForm, setShowForm] = useState(false)
 const [showGraph, setShowGraph] = useState(false)
+const [attendanceFilter, setAttendanceFilter] = useState("ALL");
 const [showQueryModal, setShowQueryModal] = useState(false);
  const [members, setMembers] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
@@ -672,29 +673,45 @@ const attendanceLabels = [
   "WOMEN",
 ];
 
+const attended = (member) => {
+  const value = String(member[selectedWeek] || "").toUpperCase();
+
+  if (attendanceFilter === "ONSITE")
+    return value.includes("ONSITE");
+
+  if (attendanceFilter === "ONLINE")
+    return value.includes("ONLINE");
+
+  return (
+    value.includes("ONSITE") ||
+    value.includes("ONLINE")
+  );
+};
+
+
 const attendanceData = [
   allData.filter(
     (m) =>
       YOUNG_MEN_VINES.includes(Number(m.v_id)) &&
-      attendedThisMonth(m)
+      attended(m)
   ).length,
 
   allData.filter(
     (m) =>
       YOUNG_WOMEN_VINES.includes(Number(m.v_id)) &&
-      attendedThisMonth(m)
+      attended(m)
   ).length,
 
   allData.filter(
     (m) =>
       MEN_VINES.includes(Number(m.v_id)) &&
-      attendedThisMonth(m)
+      attended(m)
   ).length,
 
   allData.filter(
     (m) =>
       WOMEN_VINES.includes(Number(m.v_id)) &&
-      attendedThisMonth(m)
+      attended(m)
   ).length,
 ];
 
@@ -706,7 +723,7 @@ const vineAttendance = vines.map((vine) => ({
   value: allData.filter(
     (m) =>
       String(m.v_id) === String(vine.id) &&
-      attendedThisMonth(m)
+      attended(m)
   ).length,
 }));
 
@@ -992,11 +1009,31 @@ const activities = [
         </div>
         <div className="text-center">
   <p style={{color: "var(--sidebar-active)"}} className="text-4xl font-extrabold">
-    {allData.filter(attendedThisMonth).length}
+    {allData.filter(attended).length}
   </p>
-  <p className="text-md text-foreground">
-    Total Attendees for the month of {selectedMonth}
+  <p className="text-md text-foreground mb-2">
+    <strong>{attendanceFilter}</strong> Attendees for {getSelectedWeekSunday(selectedMonth, selectedWeek)}
   </p>
+  <select
+  value={selectedWeek}
+  onChange={(e) => setSelectedWeek(e.target.value)}
+  style={{ padding: "6px", borderRadius: 4, maxWidth: 200, marginLeft: 8 }}
+>
+  <option value="WEEK1">{reportDateW1}</option>
+  <option value="WEEK2">{reportDateW2}</option>
+  <option value="WEEK3">{reportDateW3}</option>
+  <option value="WEEK4">{reportDateW4}</option>
+  <option value="WEEK5">{reportDateW5}</option>
+</select>
+<select
+  value={attendanceFilter}
+  style={{ padding: "6px", borderRadius: 4, maxWidth: 200, marginLeft: 8 }}
+  onChange={(e) => setAttendanceFilter(e.target.value)}
+>
+  <option value="ALL">Combined</option>
+  <option value="ONSITE">Onsite</option>
+  <option value="ONLINE">Online</option>
+</select>
 </div>
 <StatsChart
   type="bar"
