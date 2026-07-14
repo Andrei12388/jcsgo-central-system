@@ -163,7 +163,7 @@ const sumWeeklyActivity = (prefix) =>
   });
 
   doc.setFontSize(12);
-  doc.text("CENTRAL 3PM REPORT", 105, 22, {
+  doc.text("CENTRAL 3PM OVERALL WEEKLY REPORT", 105, 22, {
     align: "center",
   });
 
