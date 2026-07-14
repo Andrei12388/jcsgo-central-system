@@ -859,7 +859,7 @@ const activities = [
     marginLeft: 8,
   }}
 >
-  Generate Weekly Report
+  Generate Vine Weekly Report
 </button>
 <select
   value={selectedWeek}
@@ -872,7 +872,6 @@ const activities = [
   <option value="WEEK4">{reportDateW4}</option>
   <option value="WEEK5">{reportDateW5}</option>
 </select>
-</div>
 <button
      disabled={vines.length === 0}
   
@@ -887,6 +886,8 @@ const activities = [
 >
   Generate Central Weekly Report
 </button>
+</div>
+
      <button
      disabled={allData.length === 0 || vines.length === 0}
   
@@ -1048,8 +1049,6 @@ const activities = [
   labels={vineLabels}
   data={vineData}
   onBarClick={(index) => {
-  console.log(index);
-  console.log(vineAttendance[index]);
 
   const vine = vineAttendance[index];
 

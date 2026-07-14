@@ -168,7 +168,7 @@ const sumWeeklyActivity = (prefix) =>
   });
 
   doc.setFontSize(10);
-  //doc.text(`Vine: ${getVineName()}`, 14, 32);
+  doc.text(`All Vines`, 14, 38);
   doc.text(`Week: ${reportDate}`, 14, 32);
   doc.text(`Date Exported: ${new Date().toLocaleDateString()}`, 145, 32);
 
