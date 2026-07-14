@@ -1,11 +1,14 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { createChartImage } from "./chartToImage";
+import { getSelectedWeekSunday } from "./weeklyReport";
 
-export const generateCentralMonthlyReport = async ({
+export const generateCentralWeeklyReport = ({
   allData,
   vines,
   selectedMonth,
+  selectedWeek,
+  notify,
 }) => {
   const doc = new jsPDF("p", "mm", "a4");
 
@@ -14,73 +17,118 @@ const YOUNG_MEN_VINES = [76, 120, 167];
 const MEN_VINES = [1230,1361];
 const WOMEN_VINES = [1236, 1255, 1283,1360];
 
-  // =========================
-  // HELPERS
-  // =========================
+// =========================
+// HELPERS
+// =========================
 
-  const isAttendance = (m, attendance) =>
-  ["WEEK1", "WEEK2", "WEEK3", "WEEK4", "WEEK5"].some((week) =>
-    String(m[week] || "")
-      .toUpperCase()
-      .includes(attendance.toUpperCase())
-  );
+const members = allData || [];
 
-  const sumTimer = (field) =>
-  members.filter((m) => String(m[field] || "").trim() !== "").length;
+const normalize = (value) =>
+  String(value || "").trim().toUpperCase();
 
-  const sumTimerAttendance = (field, attendance) =>
+const isChecked = (val) =>
+  val === true ||
+  val === 1 ||
+  val === "1" ||
+  String(val).toLowerCase() === "yes" ||
+  String(val).toLowerCase() === "true";
+
+const totalMembers = members.length;
+
+const countByVineCategory = (vineIds) =>
+  members.filter((m) => vineIds.includes(Number(m.v_id))).length;
+
+// -------------------------
+// Sunday Attendance
+// -------------------------
+
+const totalOnsite = members.filter((m) =>
+  normalize(m[selectedWeek]).includes("ONSITE")
+).length;
+
+const totalOnline = members.filter((m) =>
+  normalize(m[selectedWeek]).includes("ONLINE")
+).length;
+
+const totalSundayAttendance = totalOnsite + totalOnline;
+
+// -------------------------
+// New Friends
+// -------------------------
+
+const sumTimer = (field) =>
+  members.filter(
+    (m) => normalize(m[field]) === normalize(selectedWeek)
+  ).length;
+
+const sumTimerAttendance = (field, attendance) =>
   members.filter((m) => {
-    const hasTimer = String(m[field] || "").trim() !== "";
 
-    return hasTimer && isAttendance(m, attendance);
+    const timer =
+      normalize(m[field]) === normalize(selectedWeek);
+
+    const attended =
+      normalize(m[selectedWeek]).includes(attendance);
+
+    return timer && attended;
+
   }).length;
 
-  const isChecked = (val) =>
-    val === true ||
-    val === 1 ||
-    val === "1" ||
-    String(val).toLowerCase() === "yes" ||
-    String(val).toLowerCase() === "true";
+// -------------------------
+// Categories
+// -------------------------
 
-  // 🔥 GLOBAL COUNT (ALL VINES)
-  const members = allData || [];
+const countCategoryAttendance = (vineIds, attendance) =>
+  members.filter((m) =>
+    vineIds.includes(Number(m.v_id)) &&
+    normalize(m[selectedWeek]).includes(attendance)
+  ).length;
 
-  const sumField = (field) =>
-    members.filter((m) => isChecked(m[field])).length;
+const countCategoryTotal = (vineIds) =>
+  members.filter((m) =>
+    vineIds.includes(Number(m.v_id)) &&
+    (
+      normalize(m[selectedWeek]).includes("ONSITE") ||
+      normalize(m[selectedWeek]).includes("ONLINE")
+    )
+  ).length;
 
-  const sumValue = (field, match) =>
-    members.filter(
-      (m) => String(m[field] || "").toUpperCase() === match
-    ).length;
+// -------------------------
+// CARE Activity
+// -------------------------
 
-  const totalMembers = members.length;
+const countTypeAttendance = (type, attendance) =>
+  members.filter((m) => {
 
-  const getVineName = () => "ALL VINES (GLOBAL REPORT)";
+    const memberType =
+      String(m.type || "").trim().toLowerCase() || "disciple";
 
-  //Unique Sunday attendance
-  const weekFields = ["WEEK1", "WEEK2", "WEEK3", "WEEK4", "WEEK5"];
+    const attended =
+      normalize(m[selectedWeek]).includes(attendance);
 
-  const activityPrefixes = {
-  EW: "WEEK_EW",
-  LH: "WEEK_LH",
-  FCG: "WEEK_FCG",
-  FCD: "WEEK_FCD",
-  FU: "WEEK_FU",
-  R: "WEEK_R",
-  OG: "WEEK_OG", // if you have these
-  OD: "WEEK_OD", // if you have these
-};
+    return memberType === type.toLowerCase() && attended;
 
-const sumActivityWeek = (prefix, weekNo) =>
+  }).length;
+
+// -------------------------
+// Weekly Activities
+// -------------------------
+
+    const selectedWeekNo =
+  Number(selectedWeek.replace("WEEK", ""));
+
+const sumWeeklyActivity = (prefix) =>
   members
     .filter(
-      (m) => String(m.type || "").trim().toLowerCase() === "vine"
+      (m) => String(m.type || "").toLowerCase() === "vine"
     )
-    .reduce((sum, vine) => {
-      return sum + Number(vine[`${prefix}${weekNo}`] || 0);
-    }, 0);
+    .reduce(
+      (sum, vine) =>
+        sum + Number(vine[`${prefix}${selectedWeekNo}`] || 0),
+      0
+    );
 
-const activityStats = (prefix) => {
+    const activityStats = (prefix) => {
   const weeks = [1, 2, 3, 4, 5].map((w) =>
     sumActivityWeek(prefix, w)
   );
@@ -101,328 +149,9 @@ const activityStats = (prefix) => {
   };
 };
 
-const totalOnsite = members.filter(m =>
-    String(m[selectedWeek])
-      .toUpperCase()
-      .includes("ONSITE")
-).length;
+ 
 
-const totalOnline = members.filter(m =>
-    String(m[selectedWeek])
-      .toUpperCase()
-      .includes("ONLINE")
-).length;
-
-/*const totalSundayAttendance = members.filter((m) =>
-  weekFields.some((week) => {
-    const value = String(m[week] || "").toUpperCase();
-    return value.includes("ONSITE") || value.includes("ONLINE");
-  })
-).length; */
-
-
-const countCategoryAttendance = (vineIds, attendance) =>
-  members.filter((m) =>
-    vineIds.includes(Number(m.v_id)) &&
-    weekFields.some((week) =>
-      String(m[week] || "")
-        .toUpperCase()
-        .includes(attendance.toUpperCase())
-    )
-  ).length;
-
-const countCategoryTotal = (vineIds) =>
-  members.filter((m) =>
-    vineIds.includes(Number(m.v_id)) &&
-    weekFields.some((week) => {
-      const value = String(m[week] || "").toUpperCase();
-      return value.includes("ONSITE") || value.includes("ONLINE");
-    })
-  ).length;
-
-const totalSundayAttendance = members.filter((m) =>
-  weekFields.some((week) => {
-    const value = String(m[week] || "").toUpperCase();
-    return value.includes("ONSITE") || value.includes("ONLINE");
-  })
-).length;
-
-const countByVineCategory = (vineIds) =>
-  members.filter((m) => vineIds.includes(Number(m.v_id))).length;
-
-
-//count active vine servant leaders
-const countActiveVineServantLeaders = () => {
-  const activeVines = new Set();
-
-  members.forEach((m) => {
-    const isVineLeader =
-      String(m.type || "").toLowerCase() === "vine";
-
-    const attended = weekFields.some((week) => {
-      const value = String(m[week] || "").toUpperCase();
-      return value.includes("ONSITE") || value.includes("ONLINE");
-    });
-
-    if (isVineLeader && attended) {
-      activeVines.add(Number(m.v_id));
-    }
-  });
-
-  return activeVines.size;
-};
-
-//count per week vine attendance
-const countActiveVinesPerWeek = (week) => {
-  const activeVines = new Set();
-
-  members.forEach((m) => {
-    const isVineLeader =
-      String(m.type || "").toLowerCase() === "vine";
-
-    const value = String(m[week] || "").toUpperCase();
-
-    if (
-      isVineLeader &&
-      (value.includes("ONSITE") || value.includes("ONLINE"))
-    ) {
-      activeVines.add(Number(m.v_id));
-    }
-  });
-
-  return activeVines.size;
-};
-
-const vineWk1 = countActiveVinesPerWeek("WEEK1");
-const vineWk2 = countActiveVinesPerWeek("WEEK2");
-const vineWk3 = countActiveVinesPerWeek("WEEK3");
-const vineWk4 = countActiveVinesPerWeek("WEEK4");
-const vineWk5 = countActiveVinesPerWeek("WEEK5");
-
-const registeredVineLeaders = members.filter(
-  (m) =>
-    String(m.type || "").toLowerCase() === "vine"
-).length;
-const vineTotal = vineWk1 + vineWk2 + vineWk3 + vineWk4 + vineWk5;
-const vineCount = [vineWk1, vineWk2, vineWk3, vineWk4, vineWk5].filter(v => v > 0).length;
-const vineAverage = vineCount ? (vineTotal / vineCount).toFixed(1) : 0;
-
-//Count cluster/careleader
-// =========================
-// CLUSTER / CARE LEADER COUNTS
-// =========================
-
-const uniqueCount = (field) => {
-  return new Set(
-    members
-      .map((m) => String(m[field] || "").trim())
-      .filter((v) => v !== "")
-  ).size;
-};
-
-const totalClusterLeaders = members.filter(
-  (m) =>
-    String(m.type || "").toLowerCase() === "cluster"
-).length;
-
-const totalCareLeaders = members.filter(
-  (m) =>
-    String(m.type || "").toLowerCase() === "careleader"
-).length;
-
-const totalRegisteredClusters = members.filter(
-  (m) =>
-    m.is_reg &&
-    String(m.type || "").toLowerCase() === "cluster"
-).length;
-
-const totalRegisteredCareLeaders = members.filter(
-  (m) =>
-    m.is_reg &&
-    String(m.type || "").toLowerCase() === "careleader"
-).length;
-
-//active unique count
-
-const countActiveLeaders = (type) => {
-  return members.filter((m) => {
-    const attended = weekFields.some((week) => {
-      const value = String(m[week] || "").toUpperCase();
-      return value.includes("ONLINE") || value.includes("ONSITE");
-    });
-
-    return (
-      attended &&
-      String(m.type || "").toLowerCase() === type.toLowerCase()
-    );
-  }).length;
-};
-
-const activeClusterLeaders = countActiveLeaders("cluster");
-const activeCareLeaders = countActiveLeaders("care");
-const activeVineLeaders = countActiveLeaders("vine");
-
-
-//Count active leaders per week
-// Count active Cluster Leaders per week
-const countActiveClustersPerWeek = (week) => {
-  return members.filter((m) => {
-    const value = String(m[week] || "").toUpperCase();
-
-    return (
-      String(m.type || "").toLowerCase() === "cluster" &&
-      (value.includes("ONSITE") || value.includes("ONLINE"))
-    );
-  }).length;
-};
-
-const clusterWk1 = countActiveClustersPerWeek("WEEK1");
-const clusterWk2 = countActiveClustersPerWeek("WEEK2");
-const clusterWk3 = countActiveClustersPerWeek("WEEK3");
-const clusterWk4 = countActiveClustersPerWeek("WEEK4");
-const clusterWk5 = countActiveClustersPerWeek("WEEK5");
-
-const clusterTotal =
-  clusterWk1 +
-  clusterWk2 +
-  clusterWk3 +
-  clusterWk4 +
-  clusterWk5;
-
-const clusterCount =
-  [clusterWk1, clusterWk2, clusterWk3, clusterWk4, clusterWk5]
-    .filter((v) => v > 0).length;
-
-const clusterAverage =
-  clusterCount
-    ? (clusterTotal / clusterCount).toFixed(1)
-    : 0;
-
-
-// Count active Care Leaders per week
-const countActiveCareLeadersPerWeek = (week) => {
-  return members.filter((m) => {
-    const value = String(m[week] || "").toUpperCase();
-
-    return (
-      String(m.type || "").toLowerCase() === "careleader" &&
-      (value.includes("ONSITE") || value.includes("ONLINE"))
-    );
-  }).length;
-};
-
-const careWk1 = countActiveCareLeadersPerWeek("WEEK1");
-const careWk2 = countActiveCareLeadersPerWeek("WEEK2");
-const careWk3 = countActiveCareLeadersPerWeek("WEEK3");
-const careWk4 = countActiveCareLeadersPerWeek("WEEK4");
-const careWk5 = countActiveCareLeadersPerWeek("WEEK5");
-
-const careTotal =
-  careWk1 +
-  careWk2 +
-  careWk3 +
-  careWk4 +
-  careWk5;
-
-const careCount =
-  [careWk1, careWk2, careWk3, careWk4, careWk5]
-    .filter((v) => v > 0).length;
-
-const careAverage =
-  careCount
-    ? (careTotal / careCount).toFixed(1)
-    : 0;
-
-//active disciples count
- const countTypeAttendance = (type, week, attendance) =>
-  members.filter((m) => {
-    const memberType =
-      String(m.type || "").trim().toLowerCase() || "disciple";
-
-    const attended = String(m[week] || "")
-      .toUpperCase()
-      .includes(attendance.toUpperCase());
-
-    return memberType === type.toLowerCase() && attended;
-  }).length;
-
-const countType = (type, week) =>
-  members.filter((m) => {
-    const memberType =
-      String(m.type || "").trim().toLowerCase() || "disciple";
-
-    const value = String(m[week] || "").toUpperCase();
-
-    return (
-      memberType === type.toLowerCase() &&
-      (value.includes("ONSITE") || value.includes("ONLINE"))
-    );
-  }).length;
-
-const discipleWk1 = countType("disciple", "WEEK1");
-const discipleWk2 = countType("disciple", "WEEK2");
-const discipleWk3 = countType("disciple", "WEEK3");
-const discipleWk4 = countType("disciple", "WEEK4");
-const discipleWk5 = countType("disciple", "WEEK5");
-
-const discipleTotal =
-  discipleWk1 +
-  discipleWk2 +
-  discipleWk3 +
-  discipleWk4 +
-  discipleWk5;
-
-const discipleCount =
-  [discipleWk1, discipleWk2, discipleWk3, discipleWk4, discipleWk5]
-    .filter((v) => v > 0).length;
-
-const discipleAverage =
-  discipleCount
-    ? (discipleTotal / discipleCount).toFixed(1)
-    : 0;
-
-  // Sunday Attendance
-/*
-  const weekFields = ["WEEK1", "WEEK2", "WEEK3", "WEEK4", "WEEK5"];
-
-const totalOnsite = members.reduce((total, member) => {
-  return (
-    total +
-    weekFields.filter((week) =>
-      String(member[week] || "")
-        .toUpperCase()
-        .includes("ONSITE")
-    ).length
-  );
-}, 0);
-
-const totalOnline = members.reduce((total, member) => {
-  return (
-    total +
-    weekFields.filter((week) =>
-      String(member[week] || "")
-        .toUpperCase()
-        .includes("ONLINE")
-    ).length
-  );
-}, 0);
-
-
-
-*/
-
-const selectedWeekNo = Number(selectedWeek.replace("WEEK", ""));
-
-const sumWeeklyActivity = (prefix) =>
-  members
-    .filter(
-      (m) => String(m.type).toLowerCase() === "vine"
-    )
-    .reduce(
-      (sum, vine) =>
-        sum + Number(vine[`${prefix}${selectedWeekNo}`] || 0),
-      0
-    );
+  const reportDate = getSelectedWeekSunday(selectedMonth, selectedWeek);
 
 
   // =========================
@@ -440,7 +169,7 @@ const sumWeeklyActivity = (prefix) =>
 
   doc.setFontSize(10);
   //doc.text(`Vine: ${getVineName()}`, 14, 32);
-  doc.text(`Month: ${selectedMonth}`, 14, 32);
+  doc.text(`Week: ${reportDate}`, 14, 32);
   doc.text(`Date Exported: ${new Date().toLocaleDateString()}`, 145, 32);
 
   // =========================
@@ -550,148 +279,129 @@ const sumWeeklyActivity = (prefix) =>
     theme: "grid",
   });
 
-  //section 3 computations
-  const evangelism = activityStats("WEEK_EW");
-const lighthouse = activityStats("WEEK_LH");
-const fieldCareGroup = activityStats("WEEK_FCG");
-const fieldCareDisciple = activityStats("WEEK_FCD");
-const followUp = activityStats("WEEK_FU");
-const reactivation = activityStats("WEEK_R");
+ const evangelism = sumWeeklyActivity("WEEK_EW");
+const lighthouse = sumWeeklyActivity("WEEK_LH");
+const fieldCareGroup = sumWeeklyActivity("WEEK_FCG");
+const fieldCareDisciple = sumWeeklyActivity("WEEK_FCD");
+const followUp = sumWeeklyActivity("WEEK_FU");
+const reactivation = sumWeeklyActivity("WEEK_R");
 
-// Optional
-const childrenGroup = activityStats("WEEK_CC");
-const outreachGroup = activityStats("WEEK_OG");
-const outreachDisciple = activityStats("WEEK_OD");
+const childrenChurch = sumWeeklyActivity("WEEK_CC");
+const outreachGroup = sumWeeklyActivity("WEEK_OG");
+const outreachDisciple = sumWeeklyActivity("WEEK_OD");
 
-  // =========================
-  // SECTION III
-  // =========================
-  autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 10,
-    head: [["III. Integration & Mobilization","Wk1","Wk2","Wk3","Wk4","Wk5", "Count", "Average", "TOTAL"]],
-    body: [
-      [
-  `Vine Servant Leaders (${registeredVineLeaders})`,
-  vineWk1,
-  vineWk2,
-  vineWk3,
-  vineWk4,
-  vineWk5,
-  countActiveVineServantLeaders(),
-  vineAverage,
-  "",
-],
-      [
-  `Cluster Servant Leaders (${totalClusterLeaders})`,
-  clusterWk1,
-  clusterWk2,
-  clusterWk3,
-  clusterWk4,
-  clusterWk5,
-  countActiveClustersPerWeek(),
-  clusterAverage,
-  "",
-],
-[
-  `Care Leaders / Group (${totalCareLeaders})`,
-  careWk1,
-  careWk2,
-  careWk3,
-  careWk4,
-  careWk5,
-  countActiveCareLeadersPerWeek(),
-  careAverage,
-  "",
-],
-      ["Active Leaders/Groups for the week/month", "", "", ""],
-      ["Total Active Disciples for the week/month", 
-        discipleWk1,
-    discipleWk2,
-    discipleWk3,
-    discipleWk4,
-    discipleWk5,
-    discipleCount,
-    discipleAverage, 
-    ""],
-      ["",],
-      ["",],
-      [
-  "HAYO / Evangelism",
-  ...evangelism.weeks,
-  evangelism.count,
-  evangelism.average,
-  evangelism.total,
-],
-[
-  "Lighthouse",
-  ...lighthouse.weeks,
-  lighthouse.count,
-  lighthouse.average,
-  lighthouse.total,
-],
-[
-  "Field Care Group",
-  ...fieldCareGroup.weeks,
-  fieldCareGroup.count,
-  fieldCareGroup.average,
-  fieldCareGroup.total,
-],
-[
-  "Field Care Disciples",
-  ...fieldCareDisciple.weeks,
-  fieldCareDisciple.count,
-  fieldCareDisciple.average,
-  fieldCareDisciple.total,
-],
-[
-  "Follow Up",
-  ...followUp.weeks,
-  followUp.count,
-  followUp.average,
-  followUp.total,
-],
-[
-  "Reactivation",
-  ...reactivation.weeks,
-  reactivation.count,
-  reactivation.average,
-  reactivation.total,
-],
+const registeredVineLeaders = members.filter(
+  (m) =>
+    String(m.type || "").toLowerCase() === "vine"
+).length;
+
+ // =========================
+// SECTION III
+// =========================
+autoTable(doc, {
+  startY: doc.lastAutoTable.finalY + 10,
+  head: [["III. CARE Activity", "Onsite", "Online", "TOTAL"]],
+  body: [
+    [
+      "Cluster Servants",
+      countTypeAttendance("cluster", "ONSITE"),
+      countTypeAttendance("cluster", "ONLINE"),
+      countTypeAttendance("cluster", "ONSITE") +
+        countTypeAttendance("cluster", "ONLINE"),
     ],
-    theme: "grid",
-  });
-
-  // =========================
-  // SECTION IV
-  // =========================
-  autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 10,
-    head: [["IV. Other Ministries","Wk1","Wk2","Wk3","Wk4","Wk5", "Count", "Average", "TOTAL"]],
-    body: [
-      [
-  "Children Church",
-  ...childrenGroup.weeks,
-  childrenGroup.count,
-  childrenGroup.average,
-  childrenGroup.total,
-],
-     [
-  "Outreach Group",
-  ...outreachGroup.weeks,
-  outreachGroup.count,
-  outreachGroup.average,
-  outreachGroup.total,
-],
-[
-  "Outreach Disciples",
-  ...outreachDisciple.weeks,
-  outreachDisciple.count,
-  outreachDisciple.average,
-  outreachDisciple.total,
-],
+    [
+      "CARE Leaders",
+      countTypeAttendance("careleader", "ONSITE"),
+      countTypeAttendance("careleader", "ONLINE"),
+      countTypeAttendance("careleader", "ONSITE") +
+        countTypeAttendance("careleader", "ONLINE"),
     ],
-    theme: "grid",
-  });
+    [
+      "CARE Disciples",
+      countTypeAttendance("disciple", "ONSITE"),
+      countTypeAttendance("disciple", "ONLINE"),
+      countTypeAttendance("disciple", "ONSITE") +
+        countTypeAttendance("disciple", "ONLINE"),
+    ],
+  ],
+  theme: "grid",
+});
+
+// =========================
+// SECTION IV
+// =========================
+autoTable(doc, {
+  startY: doc.lastAutoTable.finalY + 10,
+  head: [["IV. Other Activities", "", "", "TOTAL"]],
+  body: [
+    [
+      "HAYO / Evangelism",
+      "",
+      "",
+      sumWeeklyActivity("WEEK_EW"),
+    ],
+    [
+      "Lighthouse",
+      "",
+      "",
+      sumWeeklyActivity("WEEK_LH"),
+    ],
+    [
+      "Field Caregroup",
+      "",
+      "",
+      sumWeeklyActivity("WEEK_FCG"),
+    ],
+    [
+      "Field Care Disciples",
+      "",
+      "",
+      sumWeeklyActivity("WEEK_FCD"),
+    ],
+    [
+      "Follow Up",
+      "",
+      "",
+      sumWeeklyActivity("WEEK_FU"),
+    ],
+    [
+      "Reactivation",
+      "",
+      "",
+      sumWeeklyActivity("WEEK_R"),
+    ],
+  ],
+  theme: "grid",
+});
+
+// =========================
+// SECTION V
+// =========================
+autoTable(doc, {
+  startY: doc.lastAutoTable.finalY + 10,
+  head: [["V. Outreach", "", "", "TOTAL"]],
+  body: [
+    [
+      "Children Church",
+      "",
+      "",
+      sumWeeklyActivity("WEEK_CC"),
+    ],
+    [
+      "Outreach Group",
+      "",
+      "",
+      sumWeeklyActivity("WEEK_OG"),
+    ],
+    [
+      "Outreach Disciples",
+      "",
+      "",
+      sumWeeklyActivity("WEEK_OD"),
+    ],
+  ],
+  theme: "grid",
+});
 
   // =========================
   // FOOTER

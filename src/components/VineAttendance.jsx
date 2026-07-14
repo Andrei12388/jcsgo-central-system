@@ -9,6 +9,7 @@ import { generateVineYearlyReport } from "./report/yearlyReport";
 import { getSelectedWeekSunday } from "./report/weeklyReport";
 import LoadingSpinner from "./ui/LoadingSpinner";
 import StatsChart from "./report/StatsChart";
+import { generateCentralWeeklyReport } from "./report/overallWeeklyReport";
 
 const headerStyle = {
   position: "sticky",
@@ -855,6 +856,20 @@ const activities = [
   <option value="WEEK5">{reportDateW5}</option>
 </select>
 </div>
+<button
+     disabled={vines.length === 0}
+  
+  onClick={() =>
+    generateCentralWeeklyReport({
+      allData,   // 🔥 IMPORTANT: not members
+      vines,
+      selectedMonth,
+      selectedWeek,
+    })
+  }
+>
+  Generate Central Weekly Report
+</button>
      <button
      disabled={allData.length === 0 || vines.length === 0}
   
