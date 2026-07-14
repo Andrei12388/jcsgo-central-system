@@ -331,7 +331,7 @@ autoTable(doc, {
 // SECTION IV
 // =========================
 autoTable(doc, {
-  startY: doc.lastAutoTable.finalY + 10,
+  startY: doc.lastAutoTable.finalY + 400,
   head: [["IV. Other Activities", "", "", "TOTAL"]],
   body: [
     [

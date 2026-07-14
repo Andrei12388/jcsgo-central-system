@@ -873,8 +873,7 @@ const activities = [
   <option value="WEEK5">{reportDateW5}</option>
 </select>
 <button
-     disabled={vines.length === 0}
-  
+
   onClick={() =>
     generateCentralWeeklyReport({
       allData,   // 🔥 IMPORTANT: not members
