@@ -813,6 +813,10 @@ const activities = [
     label: "Outreach Disciple",
     prefix: "WEEK_OD",
   },
+  {
+    label: "Remarks",
+    prefix: "WEEK_RM",
+  },
 ];
 
 
@@ -2342,7 +2346,7 @@ const activities = [
  
 </div>
 
-<div style={{display: 'flex', 
+<div style={{display: 'flex', flexDirection: 'column',
   padding: 8, borderRadius: 4, overflowX: "auto",
     width: "100%",
   marginTop: 12}}>
@@ -2380,7 +2384,9 @@ const activities = [
 
   <tbody>
   {vineLeader &&
-    activities.map(({ label, prefix }) => (
+    activities
+  .filter((activity) => activity.label !== "Remarks")
+  .map(({ label, prefix }) => (
       <tr key={prefix}>
         <td
   style={{
@@ -2422,9 +2428,63 @@ const activities = [
           </td>
         ))}
       </tr>
+      
     ))}
+    
 </tbody>
+
 </table>
+{vineLeader && (
+<div
+  style={{
+    marginTop: 20,
+    padding: 16,
+    border: "1px solid #ddd",
+    borderRadius: 8,
+    backgroundColor: "#fff",
+  }}
+>
+  <label
+    style={{
+      display: "block",
+      fontWeight: "bold",
+      marginBottom: 8,
+    }}
+  >
+    Remarks for {getSelectedWeekSunday(selectedMonth, selectedWeek)} Report
+  </label>
+
+  <textarea
+    value={
+      editBuffer[vineLeader.id]?.[
+        `WEEK_RM${selectedWeek.replace("WEEK", "")}`
+      ] ??
+      vineLeader[
+        `WEEK_RM${selectedWeek.replace("WEEK", "")}`
+      ] ??
+      ""
+    }
+    onChange={(e) =>
+      updateBuffer(
+        vineLeader.id,
+        `WEEK_RM${selectedWeek.replace("WEEK", "")}`,
+        e.target.value
+      )
+    }
+    placeholder={`Enter remarks for ${selectedWeek}...`}
+    rows={5}
+    style={{
+      width: "100%",
+      resize: "vertical",
+      padding: 10,
+      boxSizing: "border-box",
+      fontFamily: "inherit",
+      fontSize: 14,
+    }}
+  />
+</div>
+)}
+
 </div>
       <div style={{ display: "flex", gap: 8, marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
        <button

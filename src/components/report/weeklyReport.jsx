@@ -332,13 +332,31 @@ addSection("3. CARE Activity", [
     // =========================
     // FOOTER
     // =========================
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 3,
-      body: [
-        ["Remarks:",],
-      ],
-      theme: "plain",
-    });
+   // =========================
+// 6. REMARKS
+// =========================
+
+const remarks =
+  vineLeader?.[`WEEK_RM${selectedWeekNo}`] || "";
+
+const remarksY = doc.lastAutoTable.finalY + 8;
+
+doc.setFontSize(10);
+doc.setFont(undefined, "bold");
+doc.text("Remarks:", 14, remarksY);
+
+doc.setFont(undefined, "normal");
+
+const remarksText = doc.splitTextToSize(
+  String(remarks),
+  175
+);
+
+doc.text(
+  remarksText.length ? remarksText : [""],
+  14 + doc.getTextWidth("Remarks: ") + 3,
+  remarksY
+);
 
 
 
