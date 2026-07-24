@@ -2447,6 +2447,19 @@ const activities = [
     backgroundColor: "#fff",
   }}
 >
+  <div className="flex flex-row items-center gap-5 mb-5">
+  <select
+  value={selectedWeek}
+  onChange={(e) => setSelectedWeek(e.target.value)}
+  style={{ padding: "6px", borderRadius: 4, maxWidth: 200, marginLeft: 8 }}
+>
+  <option value="WEEK1">{reportDateW1}</option>
+  <option value="WEEK2">{reportDateW2}</option>
+  <option value="WEEK3">{reportDateW3}</option>
+  <option value="WEEK4">{reportDateW4}</option>
+  <option value="WEEK5">{reportDateW5}</option>
+</select>
+
   <label
     style={{
       display: "block",
@@ -2456,6 +2469,8 @@ const activities = [
   >
     Remarks for {getSelectedWeekSunday(selectedMonth, selectedWeek)} Report
   </label>
+
+  </div>
 
   <textarea
     value={

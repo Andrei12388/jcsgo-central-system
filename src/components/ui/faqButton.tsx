@@ -5,11 +5,11 @@ const faqSections = [
 id: "fill-attendance",
 title: "Fill Attendance",
 description:
-"Follow steps how to easily fill up your member attendance",
-icon: "👤",
+"Follow steps how to easily fill up your member attendance.",
+icon: "📋",
 
 // Add your video here
-video: "/videos/fill-attendance.mp4",
+video: "/videos/fill-attendance.webm",
 
 instructions: [
   "Select Vine.",
@@ -25,8 +25,7 @@ description:
 "Be guided through the steps on how to add a new member to your vine.",
 icon: "👤",
 
-// Add your video here
-video: "/videos/add-member.mp4",
+video: "/videos/add-member.webm",
 
 instructions: [
   "On the Selected Vine, fill up the Add New Member form (First Name and Last Name)",
@@ -50,6 +49,24 @@ instructions: [
 "For the meantime, list down the members you want to transfer in the Remarks field below. The admin will be the one to transfer the members.",
 "Please follow the format shown in the image above and indicate the vine to which each member will be endorsed.",
 "(Note: Do not DELETE the member you want to transfer from your vine list. Do not also try to transfer to another vine by using ADD member.)",
+],
+},
+
+{
+id: "register-member",
+title: "Register A Member",
+description:
+"Learn how to register your member to the main system.",
+icon: "🆕",
+
+video: "/videos/register-member.webm",
+
+instructions: [
+"Select your Vine",
+"Click Open Registration Queue.",
+"Click Add Member Details on List.",
+"Fill up the form with your member details. Click Add Member when done.",
+"(Note: It does not automatically registered after filling up. The admin will be the one to check if the member is registered to the system.)",
 ],
 },
 ];
@@ -406,18 +423,22 @@ e.currentTarget.style.color = "var(--foreground)";
         }}
       >
         <video
-          controls
-          preload="metadata"
-          style={{
-            display: "block",
-            width: "100%",
-            maxHeight: "600px",
-            objectFit: "contain",
-          }}
-        >
-          <source src={selectedFaq.video} type="video/mp4" />
-          Your browser does not support the video element.
-        </video>
+      controls
+      preload="metadata"
+      style={{
+        display: "block",
+        width: "100%",
+        maxHeight: "600px",
+        objectFit: "contain",
+      }}
+    >
+      <source
+        src={selectedFaq.video}
+        type="video/webm"
+      />
+
+      Your browser does not support WebM video.
+    </video>
       </div>
     )}
 
