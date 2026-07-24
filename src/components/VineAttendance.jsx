@@ -8,6 +8,7 @@ import { generateCentralMonthlyReport } from "./report/monthlyReport";
 import { generateVineYearlyReport } from "./report/yearlyReport";
 import { getSelectedWeekSunday } from "./report/weeklyReport";
 import LoadingSpinner from "./ui/LoadingSpinner";
+import FaqButton from "./ui/faqButton";
 import StatsChart from "./report/StatsChart";
 import { generateCentralWeeklyReport } from "./report/overallWeeklyReport";
 
@@ -959,6 +960,7 @@ const activities = [
 >
   {showGraph ? "Hide Graph" : "Show Graph"}
 </button>
+<FaqButton />
       </div>
        
 {showGraph && (
@@ -1010,6 +1012,7 @@ const activities = [
         >
           ✕
         </button>
+        
         </div>
         <div className="text-center">
   <p style={{color: "var(--sidebar-active)"}} className="text-4xl font-extrabold">
