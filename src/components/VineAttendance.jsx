@@ -587,24 +587,102 @@ if (Object.keys(editBuffer).length > 0) {
     setAllData(refreshed);
 
     notify?.success("Member added successfully");
-  } catch (err) {
-    console.error(err);
-    notify?.error("Error adding member");
-  } finally {
-    setSaving(false);
+ } catch (err) {
+  console.error("❌ Failed to load attendance:", err);
+
+  if (isMounted) {
+    setVines([]);
+    notify?.error(
+      "Unable to load attendance data. Please check the connection."
+    );
   }
+} finally {
+  if (isMounted) {
+    setLoading(false);
+  }
+}
 };
 
-  const fetchAll = async () => {
-    const url =
-      `${webAppUrl}?action=getAll${
-        time ? `&time=${encodeURIComponent(time)}` : ""
-      }&month=${encodeURIComponent(selectedMonth)}`;
+const fetchAll = async () => {
+  const url =
+    `${webAppUrl}?action=getAll${
+      time ? `&time=${encodeURIComponent(time)}` : ""
+    }&month=${encodeURIComponent(selectedMonth)}`;
 
-    const res = await fetch(url);
-    const json = await res.json();
-    return json.data || [];
-  };
+  const MAX_RETRIES = 30;
+  const RETRY_DELAY = 1500;
+
+  let hadFailure = false;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(
+        `📡 Fetching attendance data... Attempt ${attempt}/${MAX_RETRIES}`
+      );
+
+      const res = await fetch(url, {
+        cache: "no-store",
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+
+      const json = await res.json();
+
+      const receivedData = Array.isArray(json.data)
+        ? json.data
+        : [];
+
+      // =========================
+      // ✅ DATA RECEIVED
+      // =========================
+      if (receivedData.length > 0) {
+        console.log(
+          `✅ Attendance data received: ${receivedData.length} rows`
+        );
+
+        // 🔔 Notify only if we had a previous failure
+        if (hadFailure) {
+          notify?.success(
+            `Connection restored! Attendance data received (${receivedData.length} rows).`
+          );
+        }
+
+        return receivedData;
+      }
+
+      // =========================
+      // ⚠️ EMPTY DATA
+      // =========================
+      hadFailure = true;
+
+      console.warn(
+        `⚠️ Empty attendance data. Retrying... (${attempt}/${MAX_RETRIES})`
+      );
+
+    } catch (err) {
+      // Mark that at least one request failed
+      hadFailure = true;
+
+      console.error(
+        `❌ Fetch attempt ${attempt}/${MAX_RETRIES} failed:`,
+        err
+      );
+    }
+
+    // Wait before retrying
+    if (attempt < MAX_RETRIES) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, RETRY_DELAY)
+      );
+    }
+  }
+
+  throw new Error(
+    `Unable to retrieve attendance data after ${MAX_RETRIES} attempts.`
+  );
+};
 
   //Weekly Date Calculation
   const reportDateW1 = getSelectedWeekSunday(selectedMonth, 'WEEK1');
