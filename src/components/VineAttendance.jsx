@@ -118,12 +118,23 @@ const [form, setForm] = useState({
     setShowForm(false)
   }
 
+    const fetchWithTimeout = async (url, options = {}) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+
     const callAPI = async (payload) => {
     if (selectedCelebration && payload.action !== 'landingSelection') {
       payload.time = selectedCelebration
     }
 
-    const res = await fetch(webAppUrl, {
+    const res = await fetchWithTimeout(webAppUrl, {
       method: 'POST',
       body: JSON.stringify(payload),
     })
@@ -135,7 +146,7 @@ const [form, setForm] = useState({
 const fetchData = async () => {
     setLoading(true)
   try {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${webAppUrl}?action=getMembersQuery`
     );
 
@@ -250,6 +261,58 @@ const getDiff = (id, updates) => {
   return diff;
 };
 
+const fetchVines = async () => {
+  const url =
+    `${webAppUrl}?action=getVines&time=${encodeURIComponent(time || "")}` +
+    `&month=${encodeURIComponent(selectedMonth)}`;
+  const response = await fetchWithTimeout(url, { cache: "no-store" });
+  const result = await response.json();
+
+  if (!response.ok || result.status !== "success") {
+    throw new Error(result.message || "Unable to load vines");
+  }
+
+  return Array.isArray(result.data) ? result.data : [];
+};
+
+const fetchVineMembers = async (vineId) => {
+  const url =
+    `${webAppUrl}?action=getByVine&v_id=${encodeURIComponent(vineId)}` +
+    `&time=${encodeURIComponent(time || "")}&month=${encodeURIComponent(selectedMonth)}`;
+  const response = await fetchWithTimeout(url, { cache: "no-store" });
+  const result = await response.json();
+
+  if (!response.ok || result.status !== "success") {
+    throw new Error(result.message || "Unable to load vine members");
+  }
+
+  return Array.isArray(result.data) ? result.data : [];
+};
+
+const setSelectedVineMembers = (rows) => {
+  setAllData(rows);
+  setMembers(rows);
+
+  if (!rows.length) {
+    setWeekColumns([]);
+    setOriginalData({});
+    setDirtyRows({});
+    setEditBuffer({});
+    return;
+  }
+
+  const rawKeys = Object.keys(rows[0]).map(key => String(key).trim());
+  setWeekColumns(rawKeys.filter(key => /^WEEK/i.test(key.replace(/\s+/g, ""))));
+
+  const originalMap = {};
+  rows.forEach(row => {
+    originalMap[row.id] = { ...row };
+  });
+  setOriginalData(originalMap);
+  setDirtyRows({});
+  setEditBuffer({});
+};
+
   useEffect(() => {
   let isMounted = true;
 
@@ -257,38 +320,13 @@ const getDiff = (id, updates) => {
     setLoading(true); // 👈 start loading immediately on month change
 
     try {
-      const data = await fetchAll();
+      const vineData = await fetchVines();
 
       if (!isMounted) return;
 
-      setAllData(data);
-
-      const vineRows = data.filter((r) => {
-        const val = r.is_vine;
-        return (
-          val === true ||
-          val === 1 ||
-          String(val).toLowerCase() === "true" ||
-          String(val).toLowerCase() === "yes" ||
-          String(val).toLowerCase() === "1"
-        );
-      });
-
-      const uniqMap = new Map();
-
-      vineRows.forEach((v) => {
-        const id = String(v.v_id || "").trim();
-        if (!id) return;
-
-        if (!uniqMap.has(id)) {
-          uniqMap.set(id, {
-            id,
-            name: `${v.first_name || ""} ${v.last_name || ""}`.trim() || `#${id}`
-          });
-        }
-      });
-
-      setVines(Array.from(uniqMap.values()));
+      setAllData([]);
+      setSelectedVine("");
+      setVines(vineData);
 
     } catch (err) {
       console.error(err);
@@ -323,29 +361,54 @@ const getDiff = (id, updates) => {
       return;
     }
 
-    const rows = allData.filter((r) => String(r.v_id || "").trim() === String(selectedVine).trim());
+    let isMounted = true;
 
-    if (!rows.length) {
-      setMembers([]);
-      setWeekColumns([]);
-      return;
-    }
+    setLoading(true);
 
-    const rawKeys = Object.keys(rows[0]).map(k => String(k).trim());
-    const weekCols = rawKeys.filter((k) => /^WEEK/i.test(k.replace(/\s+/g, "")));
+    fetchVineMembers(selectedVine)
+      .then((rows) => {
+        if (!isMounted) return;
 
-    setWeekColumns(weekCols);
-    setMembers(rows);
+        setAllData(rows);
 
-    const originalMap = {};
-    rows.forEach((r) => {
-      originalMap[r.id] = { ...r };
-    });
+        if (!rows.length) {
+          setMembers([]);
+          setWeekColumns([]);
+          return;
+        }
 
-    setOriginalData(originalMap);
-    setDirtyRows({});
-    setEditBuffer({});
-  }, [selectedVine, allData]);
+        const rawKeys = Object.keys(rows[0]).map(k => String(k).trim());
+        const weekCols = rawKeys.filter((k) => /^WEEK/i.test(k.replace(/\s+/g, "")));
+
+        setWeekColumns(weekCols);
+        setMembers(rows);
+
+        const originalMap = {};
+        rows.forEach((r) => {
+          originalMap[r.id] = { ...r };
+        });
+
+        setOriginalData(originalMap);
+        setDirtyRows({});
+        setEditBuffer({});
+      })
+      .catch((err) => {
+        console.error(err);
+        if (isMounted) {
+          setAllData([]);
+          setMembers([]);
+          setWeekColumns([]);
+          notify?.error(err.message || "Unable to load vine members");
+        }
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedVine, selectedMonth, webAppUrl, time]);
 
   const isChecked = (val) =>
     val === true ||
@@ -411,7 +474,7 @@ const handleAdd = async () => {
   cg_leader: selectedVineData?.name || "",
 };
 
-const res = await fetch(webAppUrl, {
+  const res = await fetchWithTimeout(webAppUrl, {
   method: "POST",
   body: JSON.stringify({
     action: "addQuery",
@@ -492,7 +555,7 @@ const updateBuffer = (memberId, field, value) => {
       }
     });
 
-    await fetch(webAppUrl, {
+    const response = await fetchWithTimeout(webAppUrl, {
       method: "POST",
       body: JSON.stringify({
         action: "batchEdit",
@@ -500,10 +563,15 @@ const updateBuffer = (memberId, field, value) => {
         updates: optimizedUpdates,
       }),
     });
+    const result = await response.json();
 
-    const refreshed = await fetchAll();
+    if (!response.ok || result.status !== "success") {
+      throw new Error(result.message || "Failed to save changes");
+    }
 
-    setAllData(refreshed);
+    const refreshed = await fetchVineMembers(selectedVine);
+
+    setSelectedVineMembers(refreshed);
     setEditBuffer({});
     setDirtyRows({});
 
@@ -526,16 +594,21 @@ const updateBuffer = (memberId, field, value) => {
 
   setSaving(true);
   try {
-    await fetch(webAppUrl, {
+    const response = await fetchWithTimeout(webAppUrl, {
       method: "POST",
       body: JSON.stringify({
         action: "delete",
         id: memberId
       })
     });
+    const result = await response.json();
 
-    const refreshed = await fetchAll();
-    setAllData(refreshed);
+    if (!response.ok || result.status !== "success") {
+      throw new Error(result.message || "Failed to delete member");
+    }
+
+    const refreshed = await fetchVineMembers(selectedVine);
+    setSelectedVineMembers(refreshed);
     notify?.success("Member deleted successfully");
   } catch (err) {
     console.error(err);
@@ -564,7 +637,7 @@ if (Object.keys(editBuffer).length > 0) {
   setSaving(true);
 
   try {
-    await fetch(webAppUrl, {
+    const response = await fetchWithTimeout(webAppUrl, {
       method: "POST",
       body: JSON.stringify({
         action: "add",
@@ -576,6 +649,11 @@ if (Object.keys(editBuffer).length > 0) {
         },
       }),
     });
+    const result = await response.json();
+
+    if (!response.ok || result.status !== "success") {
+      throw new Error(result.message || "Failed to add member");
+    }
 
     setNewMemberForm({
       first_name: "",
@@ -583,23 +661,15 @@ if (Object.keys(editBuffer).length > 0) {
       v_id: "",
     });
 
-    const refreshed = await fetchAll();
-    setAllData(refreshed);
+    const refreshed = await fetchVineMembers(selectedVine);
+    setSelectedVineMembers(refreshed);
 
     notify?.success("Member added successfully");
  } catch (err) {
-  console.error("❌ Failed to load attendance:", err);
-
-  if (isMounted) {
-    setVines([]);
-    notify?.error(
-      "Unable to load attendance data. Please check the connection."
-    );
-  }
+  console.error("Failed to add attendance member:", err);
+  notify?.error(err.message || "Unable to add member");
 } finally {
-  if (isMounted) {
-    setLoading(false);
-  }
+  setSaving(false);
 }
 };
 
@@ -609,7 +679,7 @@ const fetchAll = async () => {
       time ? `&time=${encodeURIComponent(time)}` : ""
     }&month=${encodeURIComponent(selectedMonth)}`;
 
-  const MAX_RETRIES = 30;
+  const MAX_RETRIES = 3;
   const RETRY_DELAY = 1500;
 
   let hadFailure = false;
@@ -620,7 +690,7 @@ const fetchAll = async () => {
         `📡 Fetching attendance data... Attempt ${attempt}/${MAX_RETRIES}`
       );
 
-      const res = await fetch(url, {
+      const res = await fetchWithTimeout(url, {
         cache: "no-store",
       });
 
@@ -630,6 +700,10 @@ const fetchAll = async () => {
 
       const json = await res.json();
 
+      if (json.status !== "success") {
+        throw new Error(json.message || "Attendance request failed");
+      }
+
       const receivedData = Array.isArray(json.data)
         ? json.data
         : [];
@@ -637,7 +711,7 @@ const fetchAll = async () => {
       // =========================
       // ✅ DATA RECEIVED
       // =========================
-      if (receivedData.length > 0) {
+      if (receivedData.length > 0 || json.data !== undefined) {
         console.log(
           `✅ Attendance data received: ${receivedData.length} rows`
         );

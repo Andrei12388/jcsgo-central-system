@@ -256,6 +256,45 @@ function getMembersByVine(v_id, month) {
   };
 }
 
+function getVines(month) {
+  const sheet = SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getSheetByName("MASTERLIST");
+
+  if (!sheet || sheet.getLastRow() < 3) {
+    return [];
+  }
+
+  const headers = getHeaders(sheet);
+  const rows = sheet
+    .getRange(3, 1, sheet.getLastRow() - 2, sheet.getLastColumn())
+    .getValues();
+  const vines = {};
+
+  rows.forEach(values => {
+    const row = {};
+    headers.forEach((header, index) => {
+      row[header] = values[index];
+    });
+
+    const isVine = row.is_vine === true ||
+      row.is_vine === 1 ||
+      String(row.is_vine).toLowerCase() === "true" ||
+      String(row.is_vine).toLowerCase() === "yes" ||
+      String(row.is_vine).toLowerCase() === "1";
+    const id = String(row.v_id || "").trim();
+
+    if (isVine && id && !vines[id]) {
+      vines[id] = {
+        id,
+        name: `${row.first_name || ""} ${row.last_name || ""}`.trim() || `#${id}`
+      };
+    }
+  });
+
+  return Object.values(vines);
+}
+
 /**
  * ADD MEMBER
  */
@@ -519,6 +558,13 @@ function doGet(e) {
       return jsonResponse(
         getMembersByVine(e.parameter.v_id, e.parameter.month)
       );
+    }
+
+    if (action === "getVines") {
+      return jsonResponse({
+        status: "success",
+        data: getVines(e.parameter.month)
+      });
     }
     
     if (action === "getYearlyData") {
