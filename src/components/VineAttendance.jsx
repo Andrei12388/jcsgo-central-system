@@ -290,7 +290,6 @@ const fetchVineMembers = async (vineId) => {
 };
 
 const setSelectedVineMembers = (rows) => {
-  setAllData(rows);
   setMembers(rows);
 
   if (!rows.length) {
@@ -320,11 +319,14 @@ const setSelectedVineMembers = (rows) => {
     setLoading(true); // 👈 start loading immediately on month change
 
     try {
-      const vineData = await fetchVines();
+      const [vineData, allRows] = await Promise.all([
+        fetchVines(),
+        fetchAll(),
+      ]);
 
       if (!isMounted) return;
 
-      setAllData([]);
+      setAllData(allRows);
       setSelectedVine("");
       setVines(vineData);
 
@@ -369,8 +371,6 @@ const setSelectedVineMembers = (rows) => {
       .then((rows) => {
         if (!isMounted) return;
 
-        setAllData(rows);
-
         if (!rows.length) {
           setMembers([]);
           setWeekColumns([]);
@@ -395,7 +395,6 @@ const setSelectedVineMembers = (rows) => {
       .catch((err) => {
         console.error(err);
         if (isMounted) {
-          setAllData([]);
           setMembers([]);
           setWeekColumns([]);
           notify?.error(err.message || "Unable to load vine members");
@@ -572,6 +571,7 @@ const updateBuffer = (memberId, field, value) => {
     const refreshed = await fetchVineMembers(selectedVine);
 
     setSelectedVineMembers(refreshed);
+    setAllData(await fetchAll());
     setEditBuffer({});
     setDirtyRows({});
 
@@ -609,6 +609,7 @@ const updateBuffer = (memberId, field, value) => {
 
     const refreshed = await fetchVineMembers(selectedVine);
     setSelectedVineMembers(refreshed);
+    setAllData(await fetchAll());
     notify?.success("Member deleted successfully");
   } catch (err) {
     console.error(err);
@@ -663,6 +664,7 @@ if (Object.keys(editBuffer).length > 0) {
 
     const refreshed = await fetchVineMembers(selectedVine);
     setSelectedVineMembers(refreshed);
+    setAllData(await fetchAll());
 
     notify?.success("Member added successfully");
  } catch (err) {
