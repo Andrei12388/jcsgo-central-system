@@ -10,6 +10,7 @@ import MemberSystemPage from './pages/MemberSystemPage'
 import SidebarLayout from './layouts/SidebarLayout.jsx'
 import CalendarPage from './pages/CalendarPage.jsx'
 import ProgressBar from './components/ui/ProgressBar/ProgressBar.tsx'
+import AmVineAttendancePage from './pages/AmVineAttendancePage.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -30,6 +31,7 @@ createRoot(document.getElementById('root')).render(
             
           </Route>
           <Route path="/vine-attendanceForm" element={<VineAttendancePage />} />
+          <Route path="/8amvine-attendanceForm" element={<AmVineAttendancePage />} />
         </Routes>
       </Router>
     
