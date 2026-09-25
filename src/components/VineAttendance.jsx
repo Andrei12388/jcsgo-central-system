@@ -160,13 +160,13 @@ const fetchData = async () => {
 
     if (result.status === "success") {
       setMembersQuery(result.data);
-      setLoading(false)
+      //setLoading(false)
     } else {
-      setLoading(false)
+      //setLoading(false)
       notify.error(result.message);
     }
   } catch (err) {
-    setLoading(false)
+   // setLoading(false)
     notify.error(err.message);
   }
 };
@@ -283,7 +283,7 @@ const fetchVines = async (signal) => {
   if (!response.ok || result.status !== "success") {
     throw new Error(result.message || "Unable to load vines");
   }
-  setLoading(false)
+  //setLoading(false)
 
   return Array.isArray(result.data) ? result.data : [];
 };
@@ -342,6 +342,8 @@ const setSelectedVineMembers = (rows) => {
       if (controller.signal.aborted) return;
 
       console.log("✅ Attendance load completed");
+      notify.success("Vines loaded completely!");
+      setLoading(false);
 
       setAllData(allRows);
       setSelectedVine("");
@@ -350,10 +352,12 @@ const setSelectedVineMembers = (rows) => {
     } catch (err) {
       if (err.name === "AbortError") {
         console.log("🛑 Attendance request aborted");
+        
         return;
       }
 
       console.error("❌ Attendance load failed:", err);
+       
 
       if (!controller.signal.aborted) {
         setVines([]);
@@ -362,7 +366,7 @@ const setSelectedVineMembers = (rows) => {
 
     } finally {
       if (!controller.signal.aborted) {
-        setLoading(false);
+
       }
     }
   };
@@ -433,7 +437,8 @@ const setSelectedVineMembers = (rows) => {
         }
       })
       .finally(() => {
-        if (isMounted) setLoading(false);
+        setLoading(false);
+        notify.success("Loaded Members Completely!")
       });
 
     return () => {
@@ -2518,7 +2523,7 @@ style={{
 </thead>
 
   <tbody>
-  {vineLeader &&
+  {vineLeader && !loading &&
     activities
   .filter((activity) => activity.label !== "Remarks")
   .map(({ label, prefix }) => (
@@ -2569,7 +2574,7 @@ style={{
 </tbody>
 
 </table>
-{vineLeader && (
+{vineLeader && !loading && (
 <div
   style={{
     marginTop: 20,
