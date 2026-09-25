@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 export const generateVineYearlyReport = async ({
+  family,
   webAppUrl,
   vines,
 }) => {
@@ -101,7 +102,7 @@ export const generateVineYearlyReport = async ({
     });
 
     doc.setFontSize(12);
-    doc.text("YEARLY VINE ATTENDANCE REPORT", 105, 22, {
+    doc.text(`${family} YEARLY VINE ATTENDANCE REPORT`, 105, 22, {
       align: "center",
     });
 

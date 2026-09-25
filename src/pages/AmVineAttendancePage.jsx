@@ -5,7 +5,7 @@ import { useNotification } from "../components/notificationToast";
 import VineAttendance from "../components/VineAttendance";
 
 const VINE_API_URL =
-    "https://script.google.com/macros/s/AKfycbybiBFtkncdIo1nWuGUt_AkKYBhI9qQkso-uHGhKwbjrhYCB1_9XT6jFh2MHmpgE3RDSg/exec";
+    "https://script.google.com/macros/s/AKfycbyUR6OQrXtTQ1lf25YNbhzQTN8IGnJ-0LRYAffznQP1lPObIqXLoNrHnkCOIiZq5X-TcQ/exec";
 
 export default function AmVineAttendancePage() {
 
@@ -69,7 +69,7 @@ export default function AmVineAttendancePage() {
           style={{ objectFit: 'contain' }}
         />
         <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 'bold' }}>Central Vine Attendance Form</h1>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 'bold' }}>Central 8AM Vine Attendance Form</h1>
           
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function AmVineAttendancePage() {
          
 
         </div>
-      <VineAttendance webAppUrl={VINE_API_URL} time={time} notify={notify} />
+      <VineAttendance family={"8AM"} webAppUrl={VINE_API_URL} time={time} notify={notify} />
     </div>
   );
 }

@@ -38,6 +38,7 @@ import autoTable from "jspdf-autotable";
 };
 
 export const generateVineWeeklyReport = ({
+  family,
   members,
   selectedVine,
   vines,
@@ -153,7 +154,7 @@ getActivityCount("WEEK_EW")
   // HEADER
   // =========================
   doc.setFontSize(14);
-  doc.text("VINE WEEKLY REPORT", 105, 15, { align: "center" });
+  doc.text(`${family} VINE WEEKLY REPORT`, 110, 15, { align: "center" });
 
   doc.setFontSize(11);
   doc.text(`Vine Name: ${getVineName()}`, 14, 25);

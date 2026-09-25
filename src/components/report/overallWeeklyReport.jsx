@@ -4,6 +4,7 @@ import { createChartImage } from "./chartToImage";
 import { getSelectedWeekSunday } from "./weeklyReport";
 
 export const generateCentralWeeklyReport = ({
+  family,
   allData,
   vines,
   selectedMonth,
@@ -163,7 +164,7 @@ const sumWeeklyActivity = (prefix) =>
   });
 
   doc.setFontSize(12);
-  doc.text("CENTRAL 3PM OVERALL WEEKLY REPORT", 105, 22, {
+  doc.text(`CENTRAL ${family} OVERALL WEEKLY REPORT`, 105, 22, {
     align: "center",
   });
 

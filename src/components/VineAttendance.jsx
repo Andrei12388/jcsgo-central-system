@@ -28,7 +28,7 @@ const cellStyle = {
   borderBottom: "1px solid var(--border)",
 };
 
-export default function VineAttendance({ webAppUrl, time, notify }) {
+export default function VineAttendance({ family, webAppUrl, time, notify }) {
   const MONTHS = [
     "JANUARY",
     "FEBRUARY",
@@ -118,16 +118,22 @@ const [form, setForm] = useState({
     setShowForm(false)
   }
 
-    const fetchWithTimeout = async (url, options = {}) => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000);
+ const fetchWithTimeout = async (url, options = {}, timeout = 20000) => {
+  const controller = new AbortController();
 
-    try {
-      return await fetch(url, { ...options, signal: controller.signal });
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  };
+  const timeoutId = setTimeout(() => {
+    controller.abort(new Error("Request timed out"));
+  }, timeout);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
     const callAPI = async (payload) => {
     if (selectedCelebration && payload.action !== 'landingSelection') {
@@ -261,16 +267,23 @@ const getDiff = (id, updates) => {
   return diff;
 };
 
-const fetchVines = async () => {
+const fetchVines = async (signal) => {
+  setLoading(true)
   const url =
     `${webAppUrl}?action=getVines&time=${encodeURIComponent(time || "")}` +
     `&month=${encodeURIComponent(selectedMonth)}`;
-  const response = await fetchWithTimeout(url, { cache: "no-store" });
+
+  const response = await fetch(url, {
+    cache: "no-store",
+    signal,
+  });
+
   const result = await response.json();
 
   if (!response.ok || result.status !== "success") {
     throw new Error(result.message || "Unable to load vines");
   }
+  setLoading(false)
 
   return Array.isArray(result.data) ? result.data : [];
 };
@@ -313,33 +326,52 @@ const setSelectedVineMembers = (rows) => {
 };
 
   useEffect(() => {
-  let isMounted = true;
+  const controller = new AbortController();
 
-  (async () => {
-    setLoading(true); // 👈 start loading immediately on month change
+  const loadAttendance = async () => {
+    setLoading(true);
 
     try {
+      console.log("🚀 Starting attendance load");
+
       const [vineData, allRows] = await Promise.all([
-        fetchVines(),
-        fetchAll(),
+        fetchVines(controller.signal),
+        fetchAll(controller.signal),
       ]);
 
-      if (!isMounted) return;
+      if (controller.signal.aborted) return;
+
+      console.log("✅ Attendance load completed");
 
       setAllData(allRows);
       setSelectedVine("");
       setVines(vineData);
 
     } catch (err) {
-      console.error(err);
-      setVines([]);
+      if (err.name === "AbortError") {
+        console.log("🛑 Attendance request aborted");
+        return;
+      }
+
+      console.error("❌ Attendance load failed:", err);
+
+      if (!controller.signal.aborted) {
+        setVines([]);
+        setAllData([]);
+      }
+
     } finally {
-      if (isMounted) setLoading(false); // 👈 stop loading
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
     }
-  })();
+  };
+
+  loadAttendance();
 
   return () => {
-    isMounted = false;
+    console.log("🧹 Cleaning up attendance request");
+    controller.abort();
   };
 }, [webAppUrl, time, selectedMonth]);
 
@@ -675,89 +707,32 @@ if (Object.keys(editBuffer).length > 0) {
 }
 };
 
-const fetchAll = async () => {
+const fetchAll = async (signal) => {
   const url =
     `${webAppUrl}?action=getAll${
       time ? `&time=${encodeURIComponent(time)}` : ""
     }&month=${encodeURIComponent(selectedMonth)}`;
 
-  const MAX_RETRIES = 3;
-  const RETRY_DELAY = 1500;
+  const res = await fetch(url, {
+    cache: "no-store",
+    signal,
+  });
 
-  let hadFailure = false;
-
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      console.log(
-        `📡 Fetching attendance data... Attempt ${attempt}/${MAX_RETRIES}`
-      );
-
-      const res = await fetchWithTimeout(url, {
-        cache: "no-store",
-      });
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      }
-
-      const json = await res.json();
-
-      if (json.status !== "success") {
-        throw new Error(json.message || "Attendance request failed");
-      }
-
-      const receivedData = Array.isArray(json.data)
-        ? json.data
-        : [];
-
-      // =========================
-      // ✅ DATA RECEIVED
-      // =========================
-      if (receivedData.length > 0 || json.data !== undefined) {
-        console.log(
-          `✅ Attendance data received: ${receivedData.length} rows`
-        );
-
-        // 🔔 Notify only if we had a previous failure
-        if (hadFailure) {
-          notify?.success(
-            `Connection restored! Attendance data received (${receivedData.length} rows).`
-          );
-        }
-
-        return receivedData;
-      }
-
-      // =========================
-      // ⚠️ EMPTY DATA
-      // =========================
-      hadFailure = true;
-
-      console.warn(
-        `⚠️ Empty attendance data. Retrying... (${attempt}/${MAX_RETRIES})`
-      );
-
-    } catch (err) {
-      // Mark that at least one request failed
-      hadFailure = true;
-
-      console.error(
-        `❌ Fetch attempt ${attempt}/${MAX_RETRIES} failed:`,
-        err
-      );
-    }
-
-    // Wait before retrying
-    if (attempt < MAX_RETRIES) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, RETRY_DELAY)
-      );
-    }
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
   }
 
-  throw new Error(
-    `Unable to retrieve attendance data after ${MAX_RETRIES} attempts.`
-  );
+  const json = await res.json();
+
+  if (json.status !== "success") {
+    throw new Error(json.message || "Attendance request failed");
+  }
+
+  const receivedData = Array.isArray(json.data)
+    ? json.data
+    : [];
+
+  return receivedData;
 };
 
   //Weekly Date Calculation
@@ -796,8 +771,6 @@ const paginatedMembers = filteredMembers.slice(
   (currentPage - 1) * itemsPerPage,
   currentPage * itemsPerPage
 );
-
-console.log("Fetch all Data:",allData)
 
 // for graphs
 
@@ -895,7 +868,6 @@ const showVineAttendance = (vineId) => {
     return attendedThisMonth(m);
   });
 
-  console.log(attendees);
 
   const vine = vines.find((v) => String(v.id) === String(vineId));
 
@@ -999,6 +971,7 @@ const activities = [
  <button
   onClick={() =>
     generateVineWeeklyReport({
+      family,
       members,
       selectedVine,
       vines,
@@ -1032,9 +1005,13 @@ const activities = [
   <option value="WEEK5">{reportDateW5}</option>
 </select>
 <button
-
+disabled={!selectedVine || members.length === 0}
+style={{
+    cursor: !selectedVine ? "not-allowed" : "pointer",
+  }}
   onClick={() =>
     generateCentralWeeklyReport({
+      family,
       allData,   // 🔥 IMPORTANT: not members
       vines,
       selectedMonth,
@@ -1048,9 +1025,9 @@ const activities = [
 
      <button
      disabled={allData.length === 0 || vines.length === 0}
-  
   onClick={() =>
     generateCentralMonthlyReport({
+      family,
       allData,   // 🔥 IMPORTANT: not members
       vines,
       selectedMonth,
@@ -1067,6 +1044,7 @@ const activities = [
       setYearlyLoading(true);
 
       await generateVineYearlyReport({
+        family,
         webAppUrl,
         vines,
       });

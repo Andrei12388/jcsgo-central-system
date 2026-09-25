@@ -256,43 +256,61 @@ function getMembersByVine(v_id, month) {
   };
 }
 
-function getVines(month) {
+function getVines() {
+  const start = Date.now();
+
   const sheet = SpreadsheetApp
     .getActiveSpreadsheet()
     .getSheetByName("MASTERLIST");
 
-  if (!sheet || sheet.getLastRow() < 3) {
-    return [];
+  if (!sheet) return [];
+
+  const lastRow = sheet.getLastRow();
+  const lastColumn = sheet.getLastColumn();
+
+  if (lastRow < 3) return [];
+
+  // Read headers + data in ONE request
+  const values = sheet
+    .getRange(2, 1, lastRow - 1, lastColumn)
+    .getValues();
+
+  const headers = values.shift();
+
+  const idIndex = headers.indexOf("id");
+  const firstNameIndex = headers.indexOf("first_name");
+  const lastNameIndex = headers.indexOf("last_name");
+  const vineIdIndex = headers.indexOf("v_id");
+  const isVineIndex = headers.indexOf("is_vine");
+
+  const vines = new Map();
+
+  for (const row of values) {
+    const isVine =
+      row[isVineIndex] === true ||
+      row[isVineIndex] === 1 ||
+      String(row[isVineIndex]).toLowerCase() === "true" ||
+      String(row[isVineIndex]).toLowerCase() === "yes" ||
+      String(row[isVineIndex]) === "1";
+
+    if (!isVine) continue;
+
+    const id = String(row[vineIdIndex] || "").trim();
+
+    if (!id || vines.has(id)) continue;
+
+    const firstName = String(row[firstNameIndex] || "").trim();
+    const lastName = String(row[lastNameIndex] || "").trim();
+
+    vines.set(id, {
+      id,
+      name: `${firstName} ${lastName}`.trim() || `#${id}`
+    });
   }
 
-  const headers = getHeaders(sheet);
-  const rows = sheet
-    .getRange(3, 1, sheet.getLastRow() - 2, sheet.getLastColumn())
-    .getValues();
-  const vines = {};
+  console.log("total:", Date.now() - start, "ms");
 
-  rows.forEach(values => {
-    const row = {};
-    headers.forEach((header, index) => {
-      row[header] = values[index];
-    });
-
-    const isVine = row.is_vine === true ||
-      row.is_vine === 1 ||
-      String(row.is_vine).toLowerCase() === "true" ||
-      String(row.is_vine).toLowerCase() === "yes" ||
-      String(row.is_vine).toLowerCase() === "1";
-    const id = String(row.v_id || "").trim();
-
-    if (isVine && id && !vines[id]) {
-      vines[id] = {
-        id,
-        name: `${row.first_name || ""} ${row.last_name || ""}`.trim() || `#${id}`
-      };
-    }
-  });
-
-  return Object.values(vines);
+  return [...vines.values()];
 }
 
 /**
