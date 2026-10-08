@@ -334,10 +334,35 @@ const setSelectedVineMembers = (rows) => {
     try {
       console.log("🚀 Starting attendance load");
 
-      const [vineData, allRows] = await Promise.all([
-        fetchVines(controller.signal),
-        fetchAll(controller.signal),
-      ]);
+      // Fetch the full attendance data once and derive vines locally
+      const allRows = await fetchAll(controller.signal);
+
+      if (controller.signal.aborted) return;
+
+      // Derive vines from the full data to avoid extra sheet reads
+      const vinesMap = new Map();
+
+      for (const row of allRows) {
+        const isVine =
+          row.is_vine === true ||
+          row.is_vine === 1 ||
+          String(row.is_vine).toLowerCase() === "true" ||
+          String(row.is_vine).toLowerCase() === "yes" ||
+          String(row.is_vine) === "1";
+
+        if (!isVine) continue;
+
+        const id = String(row.v_id || "").trim();
+        if (!id || vinesMap.has(id)) continue;
+
+        const firstName = String(row.first_name || "").trim();
+        const lastName = String(row.last_name || "").trim();
+
+        vinesMap.set(id, {
+          id,
+          name: `${firstName} ${lastName}`.trim() || `#${id}`,
+        });
+      }
 
       if (controller.signal.aborted) return;
 
@@ -347,7 +372,7 @@ const setSelectedVineMembers = (rows) => {
 
       setAllData(allRows);
       setSelectedVine("");
-      setVines(vineData);
+      setVines([...vinesMap.values()]);
 
     } catch (err) {
       if (err.name === "AbortError") {
