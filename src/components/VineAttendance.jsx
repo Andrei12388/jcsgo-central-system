@@ -803,11 +803,24 @@ const paginatedMembers = filteredMembers.slice(
 );
 
 // for graphs
+let YOUNG_WOMEN_VINES = [];
+let YOUNG_MEN_VINES = [];
+let MEN_VINES = [];
+let WOMEN_VINES = [];
 
-const YOUNG_WOMEN_VINES = [1, 23, 244, 140];
-const YOUNG_MEN_VINES = [76, 120, 167];
-const MEN_VINES = [1230,1361];
-const WOMEN_VINES = [1236, 1255, 1283,1360];
+if (family === "3PM") {
+  YOUNG_WOMEN_VINES = [1, 23, 244, 140];
+  YOUNG_MEN_VINES = [76, 120, 167];
+  MEN_VINES = [1230, 1361];
+  WOMEN_VINES = [1236, 1255, 1283, 1360];
+}
+
+if (family === "8AM") {
+YOUNG_WOMEN_VINES = [1, 70, 125, 146, 163];
+  YOUNG_MEN_VINES = [404, 464, 484];
+  MEN_VINES = [1230, 1361];
+  WOMEN_VINES = [19, 205, 288, 353, 370];
+}
 
 const weekFields = [
   "WEEK1",
