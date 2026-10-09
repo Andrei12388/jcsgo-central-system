@@ -819,7 +819,7 @@ if (family === "8AM") {
 YOUNG_WOMEN_VINES = [1, 70, 125, 146, 163];
   YOUNG_MEN_VINES = [404, 464, 484];
   MEN_VINES = [1230, 1361];
-  WOMEN_VINES = [19, 205, 288, 353, 370];
+  WOMEN_VINES = [19, 205, 273, 288, 353, 370];
 }
 
 const weekFields = [
