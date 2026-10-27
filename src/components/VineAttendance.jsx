@@ -1060,7 +1060,6 @@ const activities = [
     })
   }
 >
-  
   Generate Central Weekly Report
 </button>
 </div>
