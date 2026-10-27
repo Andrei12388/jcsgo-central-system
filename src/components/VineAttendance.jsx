@@ -1048,10 +1048,8 @@ const activities = [
   <option value="WEEK5">{reportDateW5}</option>
 </select>
 <button
-disabled={!selectedVine || members.length === 0}
-style={{
-    cursor: !selectedVine ? "not-allowed" : "pointer",
-  }}
+//disabled={ members.length === 0}
+
   onClick={() =>
     generateCentralWeeklyReport({
       family,
