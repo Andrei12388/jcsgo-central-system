@@ -498,7 +498,7 @@ const totalActiveDisciples = countYearlyActiveDisciples();
     "HAYO / Evangelism",
     ...evangelism.values,
     evangelism.average,
-    getHighestMonthlyValue(evangelism.values),
+    evangelism.total,
   ],
   [
     "Lighthouse",
