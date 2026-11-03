@@ -54,6 +54,9 @@ export const generateCentralYearlySummaryReport = async ({
         .includes(attendance.toUpperCase())
     );
 
+const getHighestMonthlyValue = (values) =>
+  Math.max(0, ...values);
+
   const fetchYearlyData = async () => {
     if (!webAppUrl) {
       return Object.fromEntries(
@@ -132,6 +135,100 @@ export const generateCentralYearlySummaryReport = async ({
   const countByVineCategory = (vineIds) =>
     members.filter((m) => vineIds.includes(Number(m.v_id))).length;
 
+  const hasAttendance = (member, attendance) =>
+    weekFields.some((week) => {
+      const value = String(member[week] || "").toUpperCase();
+      return value.includes(attendance.toUpperCase());
+    });
+
+  const getUniqueIdsWithAttendance = (attendance, vineIds = null) => {
+    const uniqueIds = new Set();
+
+    months.forEach((month) => {
+      (yearData[month] || []).forEach((member) => {
+        const id = String(member.id || "").trim();
+        if (!id) return;
+
+        if (vineIds && !vineIds.includes(Number(member.v_id))) return;
+
+        if (hasAttendance(member, attendance)) {
+          uniqueIds.add(id);
+        }
+      });
+    });
+
+    return uniqueIds;
+  };
+
+  const countCategoryAttendance = (vineIds, attendance) =>
+    getUniqueIdsWithAttendance(attendance, vineIds).size;
+
+  const countCategoryTotal = (vineIds) => {
+    const uniqueIds = new Set();
+
+    months.forEach((month) => {
+      (yearData[month] || []).forEach((member) => {
+        const id = String(member.id || "").trim();
+        if (!id) return;
+        if (!vineIds.includes(Number(member.v_id))) return;
+
+        const hasSundayAttendance = weekFields.some((week) => {
+          const value = String(member[week] || "").toUpperCase();
+          return value.includes("ONSITE") || value.includes("ONLINE");
+        });
+
+        if (hasSundayAttendance) {
+          uniqueIds.add(id);
+        }
+      });
+    });
+
+    return uniqueIds.size;
+  };
+
+  const getMonthlyUniqueAttendance = (monthName, attendance, vineIds = null) => {
+    const uniqueIds = new Set();
+
+    (yearData[monthName] || []).forEach((member) => {
+      const id = String(member.id || "").trim();
+      if (!id) return;
+      if (vineIds && !vineIds.includes(Number(member.v_id))) return;
+      if (hasAttendance(member, attendance)) {
+        uniqueIds.add(id);
+      }
+    });
+
+    return uniqueIds.size;
+  };
+
+  const getMonthlyUniqueTotal = (monthName, vineIds = null) => {
+    const uniqueIds = new Set();
+
+    (yearData[monthName] || []).forEach((member) => {
+      const id = String(member.id || "").trim();
+      if (!id) return;
+      if (vineIds && !vineIds.includes(Number(member.v_id))) return;
+
+      const hasSundayAttendance = weekFields.some((week) => {
+        const value = String(member[week] || "").toUpperCase();
+        return value.includes("ONSITE") || value.includes("ONLINE");
+      });
+
+      if (hasSundayAttendance) {
+        uniqueIds.add(id);
+      }
+    });
+
+    return uniqueIds.size;
+  };
+
+  const totalOnsite = getUniqueIdsWithAttendance("ONSITE").size;
+  const totalOnline = getUniqueIdsWithAttendance("ONLINE").size;
+  const totalSundayAttendance = new Set([
+    ...Array.from(getUniqueIdsWithAttendance("ONSITE")),
+    ...Array.from(getUniqueIdsWithAttendance("ONLINE")),
+  ]).size;
+
   const totalMembers = members.length;
 
   const getMonthRows = (monthName) => yearData[monthName] || [];
@@ -201,6 +298,55 @@ export const generateCentralYearlySummaryReport = async ({
       return memberType === "disciple" && attended;
     }).length;
 
+    // Count unique active members for the entire year
+const countYearlyActiveType = (type) => {
+  const uniqueIds = new Set();
+
+  months.forEach((month) => {
+    getMonthRows(month).forEach((member) => {
+      const memberType = String(member.type || "").trim().toLowerCase();
+
+      if (memberType !== type.toLowerCase()) return;
+
+      const attended = weekFields.some((week) => {
+        const value = String(member[week] || "").toUpperCase();
+        return value.includes("ONSITE") || value.includes("ONLINE");
+      });
+
+      if (attended && member.id) {
+        uniqueIds.add(String(member.id));
+      }
+    });
+  });
+
+  return uniqueIds.size;
+};
+
+// Count unique active disciples for the entire year
+const countYearlyActiveDisciples = () => {
+  const uniqueIds = new Set();
+
+  months.forEach((month) => {
+    getMonthRows(month).forEach((member) => {
+      const memberType =
+        String(member.type || "").trim().toLowerCase() || "disciple";
+
+      if (memberType !== "disciple") return;
+
+      const attended = weekFields.some((week) => {
+        const value = String(member[week] || "").toUpperCase();
+        return value.includes("ONSITE") || value.includes("ONLINE");
+      });
+
+      if (attended && member.id) {
+        uniqueIds.add(String(member.id));
+      }
+    });
+  });
+
+  return uniqueIds.size;
+};
+
   const departmentTotals = [
     ["I. Church Attendance", "TOTAL"],
     ["2026 Target", ""],
@@ -209,6 +355,45 @@ export const generateCentralYearlySummaryReport = async ({
     ["Youth Women", countByVineCategory(YOUNG_WOMEN_VINES)],
     ["Men", countByVineCategory(MEN_VINES)],
     ["Women", countByVineCategory(WOMEN_VINES)],
+  ];
+
+  const sundayTable = [
+    ["", ...monthLabels, "TOTAL"],
+    [
+      "Sunday Attendance",
+      ...months.map((month) => getMonthlyUniqueAttendance(month, "ONSITE")),
+      totalOnsite,
+    ],
+    [
+      "Sunday Attendance (Online)",
+      ...months.map((month) => getMonthlyUniqueAttendance(month, "ONLINE")),
+      totalOnline,
+    ],
+    [
+      "Youth Men",
+      ...months.map((month) => getMonthlyUniqueAttendance(month, "ONSITE", YOUNG_MEN_VINES)),
+      countCategoryAttendance(YOUNG_MEN_VINES, "ONSITE"),
+    ],
+    [
+      "Youth Women",
+      ...months.map((month) => getMonthlyUniqueAttendance(month, "ONSITE", YOUNG_WOMEN_VINES)),
+      countCategoryAttendance(YOUNG_WOMEN_VINES, "ONSITE"),
+    ],
+    [
+      "Men",
+      ...months.map((month) => getMonthlyUniqueAttendance(month, "ONSITE", MEN_VINES)),
+      countCategoryAttendance(MEN_VINES, "ONSITE"),
+    ],
+    [
+      "Women",
+      ...months.map((month) => getMonthlyUniqueAttendance(month, "ONSITE", WOMEN_VINES)),
+      countCategoryAttendance(WOMEN_VINES, "ONSITE"),
+    ],
+    [
+      "Total Attendance",
+      ...months.map((month) => getMonthlyUniqueTotal(month)),
+      totalSundayAttendance,
+    ],
   ];
 
   const newBelieversTable = [
@@ -254,10 +439,16 @@ export const generateCentralYearlySummaryReport = async ({
     ],
   ];
 
-  const vineServantLeaders = months.map((month) => countActiveTypePerMonth("vine", month));
-  const clusterLeaders = months.map((month) => countActiveTypePerMonth("cluster", month));
-  const careLeaders = months.map((month) => countActiveTypePerMonth("careleader", month));
-  const activeDisciples = months.map((month) => countDisciplePerMonth(month));
+const vineServantLeaders = months.map((month) => countActiveTypePerMonth("vine", month));
+const clusterLeaders = months.map((month) => countActiveTypePerMonth("cluster", month));
+const careLeaders = months.map((month) => countActiveTypePerMonth("careleader", month));
+const activeDisciples = months.map((month) => countDisciplePerMonth(month));
+
+// Unique yearly totals
+const totalVineServantLeaders = countYearlyActiveType("vine");
+const totalClusterLeaders = countYearlyActiveType("cluster");
+const totalCareLeaders = countYearlyActiveType("careleader");
+const totalActiveDisciples = countYearlyActiveDisciples();
 
   const evangelism = getMonthlyStats("WEEK_EW");
   const lighthouse = getMonthlyStats("WEEK_LH");
@@ -271,75 +462,75 @@ export const generateCentralYearlySummaryReport = async ({
   const outreachDisciples = getMonthlyStats("WEEK_OD");
 
   const integrationRows = [
-    [
-      `Vine Servant Leaders (${members.filter((m) => String(m.type || "").trim().toLowerCase() === "vine").length})`,
-      ...vineServantLeaders,
-      (vineServantLeaders.filter((v) => v > 0).length
-        ? (vineServantLeaders.reduce((a, b) => a + b, 0) / vineServantLeaders.filter((v) => v > 0).length).toFixed(1)
-        : 0),
-      vineServantLeaders.reduce((a, b) => a + b, 0),
-    ],
-    [
-      `Cluster Servant Leaders (${members.filter((m) => String(m.type || "").trim().toLowerCase() === "cluster").length})`,
-      ...clusterLeaders,
-      (clusterLeaders.filter((v) => v > 0).length
-        ? (clusterLeaders.reduce((a, b) => a + b, 0) / clusterLeaders.filter((v) => v > 0).length).toFixed(1)
-        : 0),
-      clusterLeaders.reduce((a, b) => a + b, 0),
-    ],
-    [
-      `Care Leaders / Group (${members.filter((m) => String(m.type || "").trim().toLowerCase() === "careleader").length})`,
-      ...careLeaders,
-      (careLeaders.filter((v) => v > 0).length
-        ? (careLeaders.reduce((a, b) => a + b, 0) / careLeaders.filter((v) => v > 0).length).toFixed(1)
-        : 0),
-      careLeaders.reduce((a, b) => a + b, 0),
-    ],
-    [
-      "Total Active Disciples per Month",
-      ...activeDisciples,
-      (activeDisciples.filter((v) => v > 0).length
-        ? (activeDisciples.reduce((a, b) => a + b, 0) / activeDisciples.filter((v) => v > 0).length).toFixed(1)
-        : 0),
-      activeDisciples.reduce((a, b) => a + b, 0),
-    ],
-    [
-      "HAYO / Evangelism",
-      ...evangelism.values,
-      evangelism.average,
-      evangelism.total,
-    ],
-    [
-      "Lighthouse",
-      ...lighthouse.values,
-      lighthouse.average,
-      lighthouse.total,
-    ],
-    [
-      "Field Care Group",
-      ...fieldCareGroup.values,
-      fieldCareGroup.average,
-      fieldCareGroup.total,
-    ],
-    [
-      "Field Care Disciples",
-      ...fieldCareDisciples.values,
-      fieldCareDisciples.average,
-      fieldCareDisciples.total,
-    ],
-    [
-      "Follow Up",
-      ...followUp.values,
-      followUp.average,
-      followUp.total,
-    ],
-    [
-      "Reactivation",
-      ...reactivation.values,
-      reactivation.average,
-      reactivation.total,
-    ],
-  ];
+  [
+    `Vine Servant Leaders (${members.filter((m) => String(m.type || "").trim().toLowerCase() === "vine").length})`,
+    ...vineServantLeaders,
+    (vineServantLeaders.filter((v) => v > 0).length
+      ? (vineServantLeaders.reduce((a, b) => a + b, 0) / vineServantLeaders.filter((v) => v > 0).length).toFixed(1)
+      : 0),
+    totalVineServantLeaders,
+  ],
+  [
+    `Cluster Servant Leaders (${members.filter((m) => String(m.type || "").trim().toLowerCase() === "cluster").length})`,
+    ...clusterLeaders,
+    (clusterLeaders.filter((v) => v > 0).length
+      ? (clusterLeaders.reduce((a, b) => a + b, 0) / clusterLeaders.filter((v) => v > 0).length).toFixed(1)
+      : 0),
+    totalClusterLeaders,
+  ],
+  [
+    `Care Leaders / Group (${members.filter((m) => String(m.type || "").trim().toLowerCase() === "careleader").length})`,
+    ...careLeaders,
+    (careLeaders.filter((v) => v > 0).length
+      ? (careLeaders.reduce((a, b) => a + b, 0) / careLeaders.filter((v) => v > 0).length).toFixed(1)
+      : 0),
+    totalCareLeaders,
+  ],
+  [
+    "Total Active Disciples per Month",
+    ...activeDisciples,
+    (activeDisciples.filter((v) => v > 0).length
+      ? (activeDisciples.reduce((a, b) => a + b, 0) / activeDisciples.filter((v) => v > 0).length).toFixed(1)
+      : 0),
+    totalActiveDisciples,
+  ],
+  [
+    "HAYO / Evangelism",
+    ...evangelism.values,
+    evangelism.average,
+    getHighestMonthlyValue(evangelism.values),
+  ],
+  [
+    "Lighthouse",
+    ...lighthouse.values,
+    lighthouse.average,
+    getHighestMonthlyValue(lighthouse.values),
+  ],
+  [
+    "Field Care Group",
+    ...fieldCareGroup.values,
+    fieldCareGroup.average,
+    getHighestMonthlyValue(fieldCareGroup.values),
+  ],
+  [
+    "Field Care Disciples",
+    ...fieldCareDisciples.values,
+    fieldCareDisciples.average,
+    getHighestMonthlyValue(fieldCareDisciples.values),
+  ],
+  [
+    "Follow Up",
+    ...followUp.values,
+    followUp.average,
+    followUp.total,
+  ],
+  [
+    "Reactivation",
+    ...reactivation.values,
+    reactivation.average,
+    reactivation.total,
+  ],
+];
 
   const otherMinistriesRows = [
     [
@@ -387,6 +578,17 @@ export const generateCentralYearlySummaryReport = async ({
 
   autoTable(doc, {
     startY: doc.lastAutoTable.finalY + 5,
+    head: [sundayTable[0]],
+    body: sundayTable.slice(1),
+    theme: "grid",
+    styles: { fontSize: 7, halign: "center" },
+    headStyles: { fillColor: [15, 118, 110], textColor: 255 },
+    pageBreak: "avoid",
+    rowPageBreak: "avoid",
+  });
+
+  autoTable(doc, {
+    startY: doc.lastAutoTable.finalY + 5,
     head: [newBelieversTable[0]],
     body: newBelieversTable.slice(1),
     theme: "grid",
@@ -401,7 +603,7 @@ export const generateCentralYearlySummaryReport = async ({
 
   autoTable(doc, {
     startY: doc.lastAutoTable.finalY + 10,
-    head: [["III. Integration & Mobilization", ...monthLabels, "Average", "TOTAL"]],
+    head: [["III. Integration & Mobilization", ...monthLabels, "Average", "Tot/High"]],
     body: integrationRows,
     theme: "grid",
     styles: { fontSize: 7, halign: "center" },
