@@ -91,8 +91,37 @@ export const generateCentralYearlySummaryReport = async ({
 
   const members = Array.from(uniqueMembers.values());
 
-  const sumTimer = (field) =>
-    members.filter((m) => String(m[field] || "").trim() !== "").length;
+  const countYearlyField = (field) => {
+    const uniqueIds = new Set();
+
+    months.forEach((month) => {
+      (yearData[month] || []).forEach((row) => {
+        const hasValue = String(row[field] || "").trim() !== "";
+        const id = String(row.id || "").trim();
+
+        if (hasValue && id) {
+          uniqueIds.add(id);
+        }
+      });
+    });
+
+    return uniqueIds.size;
+  };
+
+  const countFieldForMonth = (field, monthName) => {
+    const uniqueIds = new Set();
+
+    (yearData[monthName] || []).forEach((row) => {
+      const hasValue = String(row[field] || "").trim() !== "";
+      const id = String(row.id || "").trim();
+
+      if (hasValue && id) {
+        uniqueIds.add(id);
+      }
+    });
+
+    return uniqueIds.size;
+  };
 
   const sumTimerAttendance = (field, attendance) =>
     members.filter((m) => {
@@ -183,14 +212,46 @@ export const generateCentralYearlySummaryReport = async ({
   ];
 
   const newBelieversTable = [
-    ["II. New Believers", "TOTAL"],
-    ["1st Timers", sumTimer("1ST_TIMER")],
-    ["2nd Timers", sumTimer("2ND_TIMER")],
-    ["3rd Timers", sumTimer("3RD_TIMER")],
-    ["4th Timers", sumTimer("4TH_TIMER")],
-    ["5th Timers / Conversion", sumTimer("5TH_TIMER")],
-    ["Power Filled Life", sumTimer("POWER_FILLED")],
-    ["Water Baptism", sumTimer("WATER_BAPTISM")],
+    [
+      "II. New Believers",
+      ...monthLabels,
+      "Achieved",
+    ],
+    [
+      "1st Timers",
+      ...months.map((month) => countFieldForMonth("1ST_TIMER", month)),
+      countYearlyField("1ST_TIMER"),
+    ],
+    [
+      "2nd Timers",
+      ...months.map((month) => countFieldForMonth("2ND_TIMER", month)),
+      countYearlyField("2ND_TIMER"),
+    ],
+    [
+      "3rd Timers",
+      ...months.map((month) => countFieldForMonth("3RD_TIMER", month)),
+      countYearlyField("3RD_TIMER"),
+    ],
+    [
+      "4th Timers",
+      ...months.map((month) => countFieldForMonth("4TH_TIMER", month)),
+      countYearlyField("4TH_TIMER"),
+    ],
+    [
+      "5th Timers / Conversion",
+      ...months.map((month) => countFieldForMonth("5TH_TIMER", month)),
+      countYearlyField("5TH_TIMER"),
+    ],
+    [
+      "Power Filled Life",
+      ...months.map((month) => countFieldForMonth("POWER_FILLED", month)),
+      countYearlyField("POWER_FILLED"),
+    ],
+    [
+      "Water Baptism",
+      ...months.map((month) => countFieldForMonth("WATER_BAPTISM", month)),
+      countYearlyField("WATER_BAPTISM"),
+    ],
   ];
 
   const vineServantLeaders = months.map((month) => countActiveTypePerMonth("vine", month));
@@ -326,11 +387,16 @@ export const generateCentralYearlySummaryReport = async ({
 
   autoTable(doc, {
     startY: doc.lastAutoTable.finalY + 5,
-    head: [["II. New Believers", "Achieved"]],
+    head: [newBelieversTable[0]],
     body: newBelieversTable.slice(1),
     theme: "grid",
+    styles: { fontSize: 7, halign: "center" },
+    headStyles: { fillColor: [15, 118, 110], textColor: 255 },
     pageBreak: "avoid",
     rowPageBreak: "avoid",
+    columnStyles: {
+      0: { cellWidth: 38 },
+    },
   });
 
   autoTable(doc, {
