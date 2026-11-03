@@ -5,6 +5,7 @@ import autoTable from "jspdf-autotable";
 
 import { generateVineWeeklyReport } from "./report/weeklyReport";
 import { generateCentralMonthlyReport } from "./report/monthlyReport";
+import { generateCentralYearlySummaryReport } from "./report/yearlySummaryReport";
 import { generateVineYearlyReport } from "./report/yearlyReport";
 import { getSelectedWeekSunday } from "./report/weeklyReport";
 import LoadingSpinner from "./ui/LoadingSpinner";
@@ -1070,13 +1071,48 @@ const activities = [
   onClick={() =>
     generateCentralMonthlyReport({
       family,
-      allData,   // 🔥 IMPORTANT: not members
+      allData,
       vines,
       selectedMonth,
+      webAppUrl,
     })
   }
 >
   Generate Central Monthly Report
+</button>
+
+      <button
+  onClick={async () => {
+    try {
+      setYearlyLoading(true);
+
+      await generateCentralYearlySummaryReport({
+        family,
+        allData,
+        vines,
+        webAppUrl,
+      });
+
+      notify?.success("Yearly summary report generated");
+    } catch (err) {
+      console.error(err);
+      notify?.error("Failed to generate yearly summary report");
+    } finally {
+      setYearlyLoading(false);
+    }
+  }}
+  disabled={yearlyLoading || loading || allData.length === 0 || vines.length === 0}
+  style={{
+    background: yearlyLoading ? "#555" : "#0f766e",
+    color: "#fff",
+    padding: "8px 14px",
+    borderRadius: 6,
+    cursor:
+       yearlyLoading || allData.length === 0 || vines.length === 0 ? "not-allowed" : "pointer",
+    marginLeft: 8,
+  }}
+>
+  {yearlyLoading ? "Generating Summary..." : "Generate Yearly Summary Report"}
 </button>
 
       

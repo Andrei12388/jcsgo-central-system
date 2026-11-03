@@ -111,6 +111,44 @@ function getHeaders(sheet) {
     .map(h => String(h).trim());
 }
 
+// Cache helper: read sheet values (header row included) from cache or sheet
+function cachedSheetValues(sheetName, ttlSeconds) {
+  ttlSeconds = ttlSeconds || 120; // default 2 minutes
+
+  const cache = CacheService.getScriptCache();
+  const key = `sheetValues:${sheetName}`;
+
+  try {
+    const cached = cache.get(key);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (e) {
+    // ignore cache parse errors
+    console.warn('cache read failed', e);
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return null;
+
+  const lastRow = sheet.getLastRow();
+  const lastColumn = sheet.getLastColumn();
+
+  if (lastRow < 2) return [];
+
+  const values = sheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
+
+  try {
+    cache.put(key, JSON.stringify(values), ttlSeconds);
+  } catch (e) {
+    // cache might be too large or unavailable — ignore
+    console.warn('cache put failed', e);
+  }
+
+  return values;
+}
+
 /**
  * Helper: detect checkbox columns
  */
@@ -244,38 +282,65 @@ function getYearlyData() {
  * FILTER BY V_ID
  */
 function getMembersByVine(v_id, month) {
-  const data = getAllMembers(month);
+  // Optimized: use cached month sheet + MASTERLIST to avoid full re-reads
+  const monthSheetName = month && MONTHS.includes(String(month).trim().toUpperCase())
+    ? String(month).trim().toUpperCase()
+    : CONFIG.SHEET_NAME;
 
-  const filtered = data.filter(row =>
-    String(row.v_id) === String(v_id)
-  );
+  const monthValues = cachedSheetValues(monthSheetName);
+  const masterValues = cachedSheetValues('MASTERLIST');
+
+  if (!monthValues) {
+    return { status: 'success', data: [] };
+  }
+
+  const headers = monthValues[0];
+  const rows = monthValues.slice(1);
+
+  // Build master map if available
+  const masterMap = {};
+  if (masterValues && masterValues.length) {
+    const mHeaders = masterValues[0];
+    const mRows = masterValues.slice(1);
+    mRows.forEach(r => {
+      const obj = {};
+      mHeaders.forEach((h, i) => obj[String(h).trim()] = r[i]);
+      masterMap[String(obj.id)] = obj;
+    });
+  }
+
+  const vIdStr = String(v_id);
+
+  const result = rows.reduce((acc, row) => {
+    const obj = {};
+    headers.forEach((h, i) => obj[String(h).trim()] = row[i]);
+
+    if (String(obj.v_id) !== vIdStr) return acc;
+
+    const master = masterMap[String(obj.id)];
+    if (master) {
+      obj.is_reg = master.is_reg;
+      obj.type = master.type;
+    }
+
+    acc.push(obj);
+    return acc;
+  }, []);
 
   return {
-    status: "success",
-    data: filtered
+    status: 'success',
+    data: result
   };
 }
 
 function getVines() {
-  const start = Date.now();
+  // Use cached sheet values for MASTERLIST to reduce repeated sheet reads
+  const values = cachedSheetValues('MASTERLIST') || [];
 
-  const sheet = SpreadsheetApp
-    .getActiveSpreadsheet()
-    .getSheetByName("MASTERLIST");
+  if (!values || values.length < 2) return [];
 
-  if (!sheet) return [];
-
-  const lastRow = sheet.getLastRow();
-  const lastColumn = sheet.getLastColumn();
-
-  if (lastRow < 3) return [];
-
-  // Read headers + data in ONE request
-  const values = sheet
-    .getRange(2, 1, lastRow - 1, lastColumn)
-    .getValues();
-
-  const headers = values.shift();
+  const headers = values[0];
+  const rows = values.slice(1);
 
   const idIndex = headers.indexOf("id");
   const firstNameIndex = headers.indexOf("first_name");
@@ -285,7 +350,7 @@ function getVines() {
 
   const vines = new Map();
 
-  for (const row of values) {
+  for (const row of rows) {
     const isVine =
       row[isVineIndex] === true ||
       row[isVineIndex] === 1 ||
@@ -307,8 +372,6 @@ function getVines() {
       name: `${firstName} ${lastName}`.trim() || `#${id}`
     });
   }
-
-  console.log("total:", Date.now() - start, "ms");
 
   return [...vines.values()];
 }
@@ -556,7 +619,7 @@ function doGet(e) {
 
   try {
 
-    const action = e.parameter.action;
+    const action = e.parameter.action || e.parameter.type;
 
     if (action === "getAll") {
       return jsonResponse({
@@ -566,31 +629,31 @@ function doGet(e) {
     }
 
     if (action === "getMembersQuery") {
-  return jsonResponse({
-    status: "success",
-    data: getMembersQuery()
-  });
-}
+      return jsonResponse({
+        status: "success",
+        data: getMembersQuery()
+      });
+    }
 
-    if (action === "getByVine") {
+    if (action === "getByVine" || action === "vine") {
       return jsonResponse(
         getMembersByVine(e.parameter.v_id, e.parameter.month)
       );
     }
 
-    if (action === "getVines") {
+    if (action === "getVines" || action === "vines") {
       return jsonResponse({
         status: "success",
         data: getVines(e.parameter.month)
       });
     }
-    
-    if (action === "getYearlyData") {
-  return jsonResponse({
-    status: "success",
-    data: getYearlyData()
-  });
-}
+
+    if (action === "getYearlyData" || action === "yearlyData" || action === "yearly") {
+      return jsonResponse({
+        status: "success",
+        data: getYearlyData()
+      });
+    }
 
     return jsonResponse({
       status: "error",
