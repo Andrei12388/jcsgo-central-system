@@ -1,6 +1,68 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { createChartImage } from "./chartToImage";
+import { saveExcelWorkbook } from "../../lib/excelExport";
+
+export const exportCentralMonthlyReportExcel = ({
+  family,
+  allData = [],
+  selectedMonth,
+}) => {
+  const members = allData || [];
+  const weekFields = ["WEEK1", "WEEK2", "WEEK3", "WEEK4", "WEEK5"];
+  const isChecked = (val) =>
+    val === true ||
+    val === 1 ||
+    val === "1" ||
+    String(val).toLowerCase() === "yes" ||
+    String(val).toLowerCase() === "true";
+  const normalize = (value) => String(value || "").trim().toUpperCase();
+  const totalOnsite = members.filter((m) =>
+    weekFields.some((week) => normalize(m[week]).includes("ONSITE"))
+  ).length;
+  const totalOnline = members.filter((m) =>
+    weekFields.some((week) => normalize(m[week]).includes("ONLINE"))
+  ).length;
+  const totalSundayAttendance = totalOnsite + totalOnline;
+  const sumTimer = (field) => members.filter((m) => String(m[field] || "").trim() !== "").length;
+  const sumTimerAttendance = (field, attendance) =>
+    members.filter((m) => {
+      const hasTimer = String(m[field] || "").trim() !== "";
+      return hasTimer && weekFields.some((week) => normalize(m[week]).includes(attendance));
+    }).length;
+
+  const churchTable = [
+    ["I. Church Attendance", "TOTAL"],
+    ["Registered Disciples", members.length],
+    ["Youth Men", 0],
+    ["Youth Women", 0],
+    ["Men", 0],
+    ["Women", 0],
+  ];
+
+  const sundayTable = [
+    ["", "Onsite", "Online", "TOTAL"],
+    ["Sunday Attendance", totalOnsite, totalOnline, totalSundayAttendance],
+  ];
+
+  const newBelieversTable = [
+    ["II. New Believers", "Onsite", "Online", "TOTAL"],
+    ["1st Timers", sumTimerAttendance("1ST_TIMER", "ONSITE"), sumTimerAttendance("1ST_TIMER", "ONLINE"), sumTimer("1ST_TIMER")],
+    ["2nd Timers", sumTimerAttendance("2ND_TIMER", "ONSITE"), sumTimerAttendance("2ND_TIMER", "ONLINE"), sumTimer("2ND_TIMER")],
+    ["3rd Timers", sumTimerAttendance("3RD_TIMER", "ONSITE"), sumTimerAttendance("3RD_TIMER", "ONLINE"), sumTimer("3RD_TIMER")],
+    ["4th Timers", sumTimerAttendance("4TH_TIMER", "ONSITE"), sumTimerAttendance("4TH_TIMER", "ONLINE"), sumTimer("4TH_TIMER")],
+    ["5th Timers / Conversion", sumTimerAttendance("5TH_TIMER", "ONSITE"), sumTimerAttendance("5TH_TIMER", "ONLINE"), sumTimer("5TH_TIMER")],
+    ["Power Filled Life", "-", "-", sumTimer("POWER_FILLED")],
+    ["Water Baptism", "-", "-", sumTimer("WATER_BAPTISM")],
+  ];
+
+  saveExcelWorkbook(`${family || "Central"}-Monthly-Report-${selectedMonth}`, [
+    { name: "Summary", rows: [["Report Type", `CENTRAL ${family} MONTHLY REPORT`], ["Month", selectedMonth], ["Date Exported", new Date().toLocaleDateString()], [], ["Section", "Value"]] },
+    { name: "Church Attendance", rows: churchTable },
+    { name: "Sunday Attendance", rows: sundayTable },
+    { name: "New Believers", rows: newBelieversTable },
+  ]);
+};
 
 export const generateCentralMonthlyReport = async ({
   family,

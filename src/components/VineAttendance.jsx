@@ -3,15 +3,30 @@ import jsPDF from "jspdf";
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import autoTable from "jspdf-autotable";
 
-import { generateVineWeeklyReport } from "./report/weeklyReport";
-import { generateCentralMonthlyReport } from "./report/monthlyReport";
-import { generateCentralYearlySummaryReport } from "./report/yearlySummaryReport";
-import { generateVineYearlyReport } from "./report/yearlyReport";
+import {
+  generateVineWeeklyReport,
+  exportVineWeeklyReportExcel,
+} from "./report/weeklyReport";
+import {
+  generateCentralMonthlyReport,
+  exportCentralMonthlyReportExcel,
+} from "./report/monthlyReport";
+import {
+  generateCentralYearlySummaryReport,
+  exportCentralYearlySummaryReportExcel,
+} from "./report/yearlySummaryReport";
+import {
+  generateVineYearlyReport,
+  exportVineYearlyReportExcel,
+} from "./report/yearlyReport";
 import { getSelectedWeekSunday } from "./report/weeklyReport";
 import LoadingSpinner from "./ui/LoadingSpinner";
 import FaqButton from "./ui/faqButton";
 import StatsChart from "./report/StatsChart";
-import { generateCentralWeeklyReport } from "./report/overallWeeklyReport";
+import {
+  generateCentralWeeklyReport,
+  exportCentralWeeklyReportExcel,
+} from "./report/overallWeeklyReport";
 
 const headerStyle = {
   position: "sticky",
@@ -238,6 +253,49 @@ const handleChange = (e) => {
   const [dirtyRows, setDirtyRows] = useState({});
   const [selectedWeek, setSelectedWeek] = useState("WEEK1");
   const [yearlyLoading, setYearlyLoading] = useState(false);
+  const [excelLoading, setExcelLoading] = useState(false);
+  const [excelReportType, setExcelReportType] = useState("");
+
+  const handleExcelExport = async () => {
+    if (!excelReportType) return;
+
+    try {
+      setExcelLoading(true);
+
+      switch (excelReportType) {
+        case "vineWeekly":
+          if (!selectedVine || members.length === 0) return;
+          await Promise.resolve(
+            exportVineWeeklyReportExcel({ family, members, selectedVine, vines, selectedMonth, selectedWeek })
+          );
+          return;
+        case "centralWeekly":
+          if (allData.length === 0) return;
+          await Promise.resolve(
+            exportCentralWeeklyReportExcel({ family, allData, selectedMonth, selectedWeek })
+          );
+          return;
+        case "centralMonthly":
+          if (allData.length === 0 || vines.length === 0) return;
+          await Promise.resolve(
+            exportCentralMonthlyReportExcel({ family, allData, selectedMonth })
+          );
+          return;
+        case "centralYearlySummary":
+          if (allData.length === 0 || vines.length === 0) return;
+          await exportCentralYearlySummaryReportExcel({ family, allData, vines, webAppUrl });
+          return;
+        case "vineYearly":
+          if (vines.length === 0) return;
+          await exportVineYearlyReportExcel({ family, webAppUrl, vines });
+          return;
+        default:
+          return;
+      }
+    } finally {
+      setExcelLoading(false);
+    }
+  };
 
   
 const [currentPage, setCurrentPage] = useState(1);
@@ -1037,6 +1095,7 @@ const activities = [
 >
   Generate Vine Weekly Report
 </button>
+
 <select
   value={selectedWeek}
   onChange={(e) => setSelectedWeek(e.target.value)}
@@ -1171,6 +1230,42 @@ const activities = [
   {showGraph ? "Hide Graph" : "Show Graph"}
 </button>
 <FaqButton />
+
+<div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: 8 }}>
+  <select
+    value={excelReportType}
+    onChange={(e) => setExcelReportType(e.target.value)}
+    style={{ padding: "8px 10px", borderRadius: 6, minWidth: 170 }}
+  >
+    <option value="">Export Excel</option>
+    <option value="vineWeekly" disabled={!selectedVine || members.length === 0}>Vine Weekly Report</option>
+    <option value="centralWeekly" disabled={allData.length === 0}>Central Weekly Report</option>
+    <option value="centralMonthly" disabled={allData.length === 0 || vines.length === 0}>Central Monthly Report</option>
+    <option value="centralYearlySummary" disabled={allData.length === 0 || vines.length === 0}>Yearly Summary Report</option>
+    <option value="vineYearly" disabled={vines.length === 0}>Yearly Vine Report</option>
+  </select>
+  <button
+    onClick={handleExcelExport}
+    disabled={excelLoading || !excelReportType || (excelReportType === "vineWeekly" && (!selectedVine || members.length === 0)) || (excelReportType === "centralWeekly" && allData.length === 0) || (excelReportType === "centralMonthly" && (allData.length === 0 || vines.length === 0)) || (excelReportType === "centralYearlySummary" && (allData.length === 0 || vines.length === 0)) || (excelReportType === "vineYearly" && vines.length === 0)}
+    style={{
+      background: excelLoading ? "#4b5563" : "#14532d",
+      color: "#fff",
+      padding: "8px 14px",
+      borderRadius: 6,
+      cursor:
+        excelLoading || !excelReportType ||
+        (excelReportType === "vineWeekly" && (!selectedVine || members.length === 0)) ||
+        (excelReportType === "centralWeekly" && allData.length === 0) ||
+        (excelReportType === "centralMonthly" && (allData.length === 0 || vines.length === 0)) ||
+        (excelReportType === "centralYearlySummary" && (allData.length === 0 || vines.length === 0)) ||
+        (excelReportType === "vineYearly" && vines.length === 0)
+          ? "not-allowed"
+          : "pointer",
+    }}
+  >
+    {excelLoading ? "Downloading..." : "Download"}
+  </button>
+</div>
       </div>
        
 {showGraph && (

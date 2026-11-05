@@ -1,5 +1,119 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { saveExcelWorkbook } from "../../lib/excelExport";
+
+export const exportVineYearlyReportExcel = async ({
+  family,
+  webAppUrl,
+  vines,
+}) => {
+  const months = [
+    "JANUARY",
+    "FEBRUARY",
+    "MARCH",
+    "APRIL",
+    "MAY",
+    "JUNE",
+    "JULY",
+    "AUGUST",
+    "SEPTEMBER",
+    "OCTOBER",
+    "NOVEMBER",
+    "DECEMBER",
+  ];
+
+  const isChecked = (val) => {
+    const v = String(val || "").toUpperCase();
+    return (
+      val === true ||
+      val === 1 ||
+      val === "1" ||
+      v === "YES" ||
+      v === "TRUE" ||
+      v === "ONSITE" ||
+      v === "ONLINE"
+    );
+  };
+
+  const fetchYearlyData = async () => {
+    const res = await fetch(`${webAppUrl}?action=getYearlyData`);
+    const json = await res.json();
+    return json.data || {};
+  };
+
+  const yearData = await fetchYearlyData();
+  const vineMap = new Map();
+
+  Object.values(yearData).forEach((rows) => {
+    rows.forEach((r) => {
+      if (!r?.id) return;
+      const vineId = String(r.v_id || "UNKNOWN");
+      if (!vineMap.has(vineId)) vineMap.set(vineId, new Map());
+      const group = vineMap.get(vineId);
+      if (!group.has(r.id)) {
+        group.set(r.id, {
+          id: r.id,
+          first_name: r.first_name,
+          last_name: r.last_name,
+          v_id: r.v_id,
+          is_reg: isChecked(r.is_reg),
+        });
+      }
+    });
+  });
+
+  const hasMonthAttendance = (rows, memberId) => {
+    const userRows = rows.filter((r) => String(r.id) === String(memberId));
+    return userRows.some((row) =>
+      Object.keys(row).some((k) => /^WEEK/i.test(k) && isChecked(row[k]))
+    );
+  };
+
+  const sheets = [];
+
+  for (const vine of vines || []) {
+    const members = Array.from(vineMap.get(String(vine.id))?.values() || []);
+    if (!members.length) continue;
+
+    const rows = [
+      ["JESUS CHRIST SAVES GLOBAL OUTREACH"],
+      [`${family} YEARLY VINE ATTENDANCE REPORT`],
+      [`Vine: ${vine.name}`],
+      [`Total Members: ${members.length}`],
+      [`Exported: ${new Date().toLocaleDateString()}`],
+      [`Year: ${new Date().getFullYear()}`],
+      [],
+      ["MEMBER", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC", "REMARKS"],
+    ];
+
+    const monthlyTotals = Array(months.length).fill(0);
+
+    members.forEach((m) => {
+      const values = months.map((month, monthIndex) => {
+        const monthRows = yearData[month] || [];
+        const attended = hasMonthAttendance(monthRows, m.id);
+
+        if (attended) {
+          monthlyTotals[monthIndex] += 1;
+          return "/";
+        }
+
+        return "";
+      });
+      rows.push([`${m.first_name || ""} ${m.last_name || ""}`.trim(), ...values, ""]);
+    });
+
+    rows.push([
+      "TOTAL",
+      ...monthlyTotals,
+      monthlyTotals.reduce((sum, count) => sum + count, 0),
+    ]);
+
+    sheets.push({ name: `Vine ${vine.name}`.slice(0, 31), rows });
+  }
+
+  saveExcelWorkbook(`${family || "Family"}-Yearly-Vine-Report-${new Date().getFullYear()}`, sheets);
+};
 
 export const generateVineYearlyReport = async ({
   family,

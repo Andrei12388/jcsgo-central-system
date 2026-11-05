@@ -2,6 +2,44 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { createChartImage } from "./chartToImage";
 import { getSelectedWeekSunday } from "./weeklyReport";
+import { saveExcelWorkbook } from "../../lib/excelExport";
+
+export const exportCentralWeeklyReportExcel = ({
+  family,
+  allData = [],
+  selectedMonth,
+  selectedWeek,
+}) => {
+  const members = allData || [];
+  const normalize = (value) => String(value || "").trim().toUpperCase();
+  const totalOnsite = members.filter((m) => normalize(m[selectedWeek]).includes("ONSITE")).length;
+  const totalOnline = members.filter((m) => normalize(m[selectedWeek]).includes("ONLINE")).length;
+  const totalSundayAttendance = totalOnsite + totalOnline;
+  const reportDate = getSelectedWeekSunday(selectedMonth, selectedWeek);
+
+  const summaryRows = [
+    ["Report Type", `CENTRAL ${family} OVERALL WEEKLY REPORT`],
+    ["Week", reportDate],
+    ["Date Exported", new Date().toLocaleDateString()],
+    [],
+    ["Section", "Onsite", "Online", "TOTAL"],
+    ["Sunday Attendance", totalOnsite, totalOnline, totalSundayAttendance],
+    ["Registered Disciples", members.length, "", members.length],
+  ];
+
+  const categoriesRows = [
+    ["Category", "Onsite", "Online", "TOTAL"],
+    ["Youth Men", 0, 0, 0],
+    ["Youth Women", 0, 0, 0],
+    ["Men", 0, 0, 0],
+    ["Women", 0, 0, 0],
+  ];
+
+  saveExcelWorkbook(`${family || "Central"}-Overall-Weekly-Report-${selectedMonth}-${selectedWeek}`, [
+    { name: "Summary", rows: summaryRows },
+    { name: "Categories", rows: categoriesRows },
+  ]);
+};
 
 export const generateCentralWeeklyReport = ({
   family,

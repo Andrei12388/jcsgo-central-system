@@ -1,5 +1,162 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { saveExcelWorkbook } from "../../lib/excelExport";
+
+export const exportCentralYearlySummaryReportExcel = async ({
+  family,
+  allData = [],
+  vines = [],
+  webAppUrl,
+  selectedYear = new Date().getFullYear(),
+}) => {
+  const months = [
+    "JANUARY",
+    "FEBRUARY",
+    "MARCH",
+    "APRIL",
+    "MAY",
+    "JUNE",
+    "JULY",
+    "AUGUST",
+    "SEPTEMBER",
+    "OCTOBER",
+    "NOVEMBER",
+    "DECEMBER",
+  ];
+  const monthLabels = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+  const weekFields = ["WEEK1", "WEEK2", "WEEK3", "WEEK4", "WEEK5"];
+  const YOUNG_WOMEN_VINES = [1, 23, 244, 140];
+  const YOUNG_MEN_VINES = [76, 120, 167];
+  const MEN_VINES = [1230, 1361];
+  const WOMEN_VINES = [1236, 1255, 1283, 1360];
+
+  const isChecked = (val) => {
+    const v = String(val ?? "").toUpperCase();
+    return val === true || val === 1 || val === "1" || v === "YES" || v === "TRUE" || v === "ONSITE" || v === "ONLINE";
+  };
+
+  const fetchYearlyData = async () => {
+    if (!webAppUrl) {
+      return Object.fromEntries(months.map((month) => [month, Array.isArray(allData) ? allData : []]));
+    }
+    const res = await fetch(`${webAppUrl}?action=getYearlyData`);
+    const json = await res.json();
+    return json.data || {};
+  };
+
+  const yearData = await fetchYearlyData();
+  const uniqueMembers = new Map();
+
+  Object.values(yearData).forEach((rows = []) => {
+    rows.forEach((row) => {
+      if (!row?.id) return;
+      const key = String(row.id);
+      if (!uniqueMembers.has(key)) {
+        uniqueMembers.set(key, { id: row.id, first_name: row.first_name || "", last_name: row.last_name || "", is_reg: isChecked(row.is_reg), v_id: row.v_id ?? "", type: String(row.type || "").trim() || "disciple", ...row });
+      }
+    });
+  });
+
+  const members = Array.from(uniqueMembers.values());
+  const getMonthRows = (monthName) => yearData[monthName] || [];
+  const hasAttendance = (member, attendance) =>
+    weekFields.some((week) => String(member[week] || "").toUpperCase().includes(attendance.toUpperCase()));
+  const getMonthlyUniqueAttendance = (monthName, attendance, vineIds = null) => {
+    const uniqueIds = new Set();
+    getMonthRows(monthName).forEach((member) => {
+      const id = String(member.id || "").trim();
+      if (!id) return;
+      if (vineIds && !vineIds.includes(Number(member.v_id))) return;
+      if (hasAttendance(member, attendance)) uniqueIds.add(id);
+    });
+    return uniqueIds.size;
+  };
+  const getMonthlyUniqueTotal = (monthName, vineIds = null) => {
+    const uniqueIds = new Set();
+    getMonthRows(monthName).forEach((member) => {
+      const id = String(member.id || "").trim();
+      if (!id) return;
+      if (vineIds && !vineIds.includes(Number(member.v_id))) return;
+      const hasSundayAttendance = weekFields.some((week) => {
+        const value = String(member[week] || "").toUpperCase();
+        return value.includes("ONSITE") || value.includes("ONLINE");
+      });
+      if (hasSundayAttendance) uniqueIds.add(id);
+    });
+    return uniqueIds.size;
+  };
+  const countByVineCategory = (vineIds) => members.filter((m) => vineIds.includes(Number(m.v_id))).length;
+  const countFieldForMonth = (field, monthName) => new Set((getMonthRows(monthName) || []).filter((row) => String(row[field] || "").trim() !== "").map((row) => String(row.id))).size;
+  const countYearlyField = (field) => {
+    const uniqueIds = new Set();
+    months.forEach((month) => {
+      (yearData[month] || []).forEach((row) => {
+        const id = String(row.id || "").trim();
+        if (String(row[field] || "").trim() !== "" && id) uniqueIds.add(id);
+      });
+    });
+    return uniqueIds.size;
+  };
+  const totalOnsite = new Set([...Array.from(new Set((months.flatMap((month) => (yearData[month] || []).map((row) => String(row.id)))))).filter((id) => (months.some((month) => (yearData[month] || []).some((row) => String(row.id) === id && hasAttendance(row, "ONSITE")))))]).size;
+  const totalOnline = new Set([...Array.from(new Set((months.flatMap((month) => (yearData[month] || []).map((row) => String(row.id)))))).filter((id) => (months.some((month) => (yearData[month] || []).some((row) => String(row.id) === id && hasAttendance(row, "ONLINE")))))]).size;
+  const totalSundayAttendance = new Set([...Array.from(new Set((months.flatMap((month) => (yearData[month] || []).map((row) => String(row.id)))))).filter((id) => (months.some((month) => (yearData[month] || []).some((row) => String(row.id) === id && (hasAttendance(row, "ONSITE") || hasAttendance(row, "ONLINE"))))))]).size;
+
+  const departmentTotals = [
+    ["I. Church Attendance", "TOTAL"],
+    ["2026 Target", ""],
+    ["Registered Disciples", members.length],
+    ["Youth Men", countByVineCategory(YOUNG_MEN_VINES)],
+    ["Youth Women", countByVineCategory(YOUNG_WOMEN_VINES)],
+    ["Men", countByVineCategory(MEN_VINES)],
+    ["Women", countByVineCategory(WOMEN_VINES)],
+  ];
+
+  const sundayTable = [
+    ["", ...monthLabels, "TOTAL"],
+    ["Sunday Attendance", ...months.map((month) => getMonthlyUniqueAttendance(month, "ONSITE")), totalOnsite],
+    ["Sunday Attendance (Online)", ...months.map((month) => getMonthlyUniqueAttendance(month, "ONLINE")), totalOnline],
+    ["Youth Men", ...months.map((month) => getMonthlyUniqueAttendance(month, "ONSITE", YOUNG_MEN_VINES)), countByVineCategory(YOUNG_MEN_VINES)],
+    ["Youth Women", ...months.map((month) => getMonthlyUniqueAttendance(month, "ONSITE", YOUNG_WOMEN_VINES)), countByVineCategory(YOUNG_WOMEN_VINES)],
+    ["Men", ...months.map((month) => getMonthlyUniqueAttendance(month, "ONSITE", MEN_VINES)), countByVineCategory(MEN_VINES)],
+    ["Women", ...months.map((month) => getMonthlyUniqueAttendance(month, "ONSITE", WOMEN_VINES)), countByVineCategory(WOMEN_VINES)],
+    ["Total Attendance", ...months.map((month) => getMonthlyUniqueTotal(month)), totalSundayAttendance],
+  ];
+
+  const newBelieversTable = [
+    ["II. New Believers", ...monthLabels, "Achieved"],
+    ["1st Timers", ...months.map((month) => countFieldForMonth("1ST_TIMER", month)), countYearlyField("1ST_TIMER")],
+    ["2nd Timers", ...months.map((month) => countFieldForMonth("2ND_TIMER", month)), countYearlyField("2ND_TIMER")],
+    ["3rd Timers", ...months.map((month) => countFieldForMonth("3RD_TIMER", month)), countYearlyField("3RD_TIMER")],
+    ["4th Timers", ...months.map((month) => countFieldForMonth("4TH_TIMER", month)), countYearlyField("4TH_TIMER")],
+    ["5th Timers / Conversion", ...months.map((month) => countFieldForMonth("5TH_TIMER", month)), countYearlyField("5TH_TIMER")],
+    ["Power Filled Life", ...months.map((month) => countFieldForMonth("POWER_FILLED", month)), countYearlyField("POWER_FILLED")],
+    ["Water Baptism", ...months.map((month) => countFieldForMonth("WATER_BAPTISM", month)), countYearlyField("WATER_BAPTISM")],
+  ];
+
+  const integrationRows = [
+    ["III. Integration & Mobilization", ...monthLabels, "Average", "Tot/High"],
+    ["Vine Servant Leaders", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ["Cluster Servant Leaders", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ["Care Leaders / Group", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ["HAYO / Evangelism", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ];
+
+  const otherMinistriesRows = [
+    ["IV. Other Ministries", ...monthLabels, "Average", "TOTAL"],
+    ["Children Church", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ["Outreach Group", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ["Outreach Disciples", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ];
+
+  saveExcelWorkbook(`${family || "Central"}-Yearly-Summary-Report-${selectedYear}`, [
+    { name: "Summary", rows: [["Report Type", `CENTRAL ${family} YEARLY SUMMARY REPORT`], ["Year", selectedYear], ["Date Exported", new Date().toLocaleDateString()], [], ["Section", "Value"]] },
+    { name: "Church Attendance", rows: departmentTotals },
+    { name: "Sunday Attendance", rows: sundayTable },
+    { name: "New Believers", rows: newBelieversTable },
+    { name: "Integration & Mobilization", rows: integrationRows },
+    { name: "Other Ministries", rows: otherMinistriesRows },
+  ]);
+};
 
 export const generateCentralYearlySummaryReport = async ({
   family,

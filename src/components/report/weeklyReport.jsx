@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { saveExcelWorkbook } from "../../lib/excelExport";
 
   export const getSundaysOfMonth = (month) => {
   const year = new Date().getFullYear();
@@ -35,6 +36,86 @@ import autoTable from "jspdf-autotable";
   });
 
   return `${formatted} (${week})`;
+};
+
+export const exportVineWeeklyReportExcel = ({
+  family,
+  members = [],
+  selectedVine,
+  vines = [],
+  selectedMonth,
+  selectedWeek,
+}) => {
+  const getVineName = () => {
+    const vine = vines?.find((v) => v.id === selectedVine);
+
+    if (!vine && members?.length) {
+      return `${members[0].first_name || ""} ${members[0].last_name || ""}`.trim();
+    }
+
+    return vine?.name || `Vine #${selectedVine || "Unknown"}`;
+  };
+
+  const normalize = (value) => String(value || "").trim().toUpperCase();
+  const getWeekValue = (member, keyword) =>
+    String(member[selectedWeek] || "").toUpperCase().includes(keyword);
+
+  const onsite = members.filter((m) => getWeekValue(m, "ONSITE")).length;
+  const online = members.filter((m) => getWeekValue(m, "ONLINE")).length;
+  const sumTimer = (field) =>
+    members.filter((m) => normalize(m[field]) === normalize(selectedWeek)).length;
+  const sumTimerAttendance = (field, attendance) =>
+    members.filter((m) => {
+      const isTimer = normalize(m[field]) === normalize(selectedWeek);
+      const attended = normalize(m[selectedWeek]).includes(attendance);
+      return isTimer && attended;
+    }).length;
+  const countTypeAttendance = (type, attendance) =>
+    members.filter((m) => {
+      const memberType = String(m.type || "").trim().toLowerCase() || "disciple";
+      const attended = normalize(m[selectedWeek]).includes(attendance);
+      return memberType === type.toLowerCase() && attended;
+    }).length;
+
+  const reportDate = getSelectedWeekSunday(selectedMonth, selectedWeek);
+
+  const summaryRows = [
+    ["Report Type", `${family} VINE WEEKLY REPORT`],
+    ["Vine Name", getVineName()],
+    ["Date", reportDate],
+    ["Selected Week", selectedWeek],
+    [],
+    ["Section", "Onsite", "Online", "TOTAL"],
+    ["Sunday Attendance", onsite, online, onsite + online],
+    ["1st Timers", sumTimerAttendance("1ST_TIMER", "ONSITE"), sumTimerAttendance("1ST_TIMER", "ONLINE"), sumTimer("1ST_TIMER")],
+    ["2nd Timers", sumTimerAttendance("2ND_TIMER", "ONSITE"), sumTimerAttendance("2ND_TIMER", "ONLINE"), sumTimer("2ND_TIMER")],
+    ["3rd Timers", sumTimerAttendance("3RD_TIMER", "ONSITE"), sumTimerAttendance("3RD_TIMER", "ONLINE"), sumTimer("3RD_TIMER")],
+    ["4th Timers", sumTimerAttendance("4TH_TIMER", "ONSITE"), sumTimerAttendance("4TH_TIMER", "ONLINE"), sumTimer("4TH_TIMER")],
+    ["5th Timers", sumTimerAttendance("5TH_TIMER", "ONSITE"), sumTimerAttendance("5TH_TIMER", "ONLINE"), sumTimer("5TH_TIMER")],
+  ];
+
+  const careRows = [
+    ["Category", "Onsite", "Online", "TOTAL"],
+    ["Cluster Servants", countTypeAttendance("cluster", "ONSITE"), countTypeAttendance("cluster", "ONLINE"), countTypeAttendance("cluster", "ONSITE") + countTypeAttendance("cluster", "ONLINE")],
+    ["CARE Leaders", countTypeAttendance("careleader", "ONSITE"), countTypeAttendance("careleader", "ONLINE"), countTypeAttendance("careleader", "ONSITE") + countTypeAttendance("careleader", "ONLINE")],
+    ["Disciples", countTypeAttendance("disciple", "ONSITE"), countTypeAttendance("disciple", "ONLINE"), countTypeAttendance("disciple", "ONSITE") + countTypeAttendance("disciple", "ONLINE")],
+  ];
+
+  const activitiesRows = [
+    ["Activity", "Wk1", "Wk2", "Wk3", "Wk4", "Wk5", "TOTAL"],
+    ["Evangelism", 0, 0, 0, 0, 0, 0],
+    ["Lighthouse", 0, 0, 0, 0, 0, 0],
+    ["Field Care Group", 0, 0, 0, 0, 0, 0],
+    ["Field Care Disciples", 0, 0, 0, 0, 0, 0],
+    ["Follow Up", 0, 0, 0, 0, 0, 0],
+    ["Reactivation", 0, 0, 0, 0, 0, 0],
+  ];
+
+  saveExcelWorkbook(`${family || "Family"}-Vine-Weekly-Report-${selectedMonth}-${selectedWeek}`, [
+    { name: "Summary", rows: summaryRows },
+    { name: "Care Activity", rows: careRows },
+    { name: "Activities", rows: activitiesRows },
+  ]);
 };
 
 export const generateVineWeeklyReport = ({
